@@ -1,0 +1,93 @@
+# build output
+dist/
+
+# generated vndb covers
+public/vndb-covers/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables and local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
+
+# macOS-specific files
+.DS_Store
+
+.vercel
+
+package-lock.json
+bun.lockb
+yarn.lock
+
+# ide
+.idea
+*.iml
+
+# 本地文档与办公文件（不公开）
+docs/
+Firefly-docs/
+*.doc
+*.docx
+*.pdf
+*.rtf
+*.odt
+
+# lite 版本
+Firefly-Lite/
+
+cache/
+package/
+.obsidian/
+
+# vibe coding
+.codex*
+.claude
+.mimocode
+
+# 文章只保存在本机和服务器备份，不推送到 GitHub
+src/content/posts/*
+!src/content/posts/.gitkeep
+
+# 真实动态内容不推送；根目录 example-posts 不受此规则影响
+src/content/dynamic/*
+!src/content/dynamic/.gitkeep
+
+# 音乐与音频文件（版权及隐私考虑，不进仓库）
+public/assets/music/
+*.mp3
+*.flac
+*.wav
+*.m4a
+*.aac
+*.ogg
+*.wma
+*.ape
+*.mid
+*.midi
+
+# ZCode 本地工作区
+.zcode/
+
+# 本地部署临时包
+deploy-*.tar.gz
+
+# 设计QA工作文档（含本机绝对路径，不公开）
+design-qa.md
+
+# 原作者的文档（本地留档，不上传仓库）
+docs/原作者-*

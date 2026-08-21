@@ -1,0 +1,224 @@
+---
+import { Icon } from "astro-icon/components";
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import type { WidgetComponentConfig } from "@/types/config";
+import { url } from "@/utils/url-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+
+const { class: className, style } = Astro.props;
+
+// 标题由组件内部自定义渲染（图标 + 发文日历 + 年份），不走 WidgetLayout 默认标题
+const showTitle = false;
+
+// 星期表头取首字（中文即"日一二三四五六"，英文取首字母）
+const weekDays = [
+	i18n(I18nKey.calendarSunday),
+	i18n(I18nKey.calendarMonday),
+	i18n(I18nKey.calendarTuesday),
+	i18n(I18nKey.calendarWednesday),
+	i18n(I18nKey.calendarThursday),
+	i18n(I18nKey.calendarFriday),
+	i18n(I18nKey.calendarSaturday),
+].map((d) => d.charAt(0));
+
+const calendarDataUrl = url("/api/allPostMeta.json");
+const postUrlPrefix = url("/posts/");
+---
+
+<WidgetLayout
+  name={i18n(I18nKey.calendar)}
+  showTitle={showTitle}
+  id="calendar-widget"
+  class={className}
+  style={style}
+>
+  <div class="post-calendar">
+    {/* 头部：图标 + 标题 + 年份 */}
+    <div class="flex items-center justify-between mb-1.5">
+      <div class="flex items-center gap-1.5">
+        <div class="text-(--primary) text-base">
+          <Icon is:inline name="material-symbols:calendar-month-outline-rounded" />
+        </div>
+        <span class="font-bold text-xs text-neutral-800 dark:text-neutral-100">
+          发文日历
+        </span>
+      </div>
+      <span class="text-xs font-bold text-(--primary)" id="cal-year"></span>
+    </div>
+
+    {/* 月份标签 */}
+    <div
+      class="text-[10px] text-neutral-500 dark:text-neutral-400 mb-1 font-medium"
+      id="cal-month-label"
+    >
+    </div>
+
+    {/* 星期表头 */}
+    <div class="grid grid-cols-7 gap-0.5 mb-0.5">
+      {
+        weekDays.map((day) => (
+          <span class="text-center text-[10px] text-neutral-500 dark:text-neutral-400 font-medium leading-4">
+            {day}
+          </span>
+        ))
+      }
+    </div>
+
+    {/* 日期格（客户端渲染当前月） */}
+    <div class="grid grid-cols-7 gap-0.5" id="cal-day-grid"></div>
+
+    {/* 当日文章列表（点击有圆点的日期展开） */}
+    <div id="calendar-posts" class="hidden mt-3">
+      <div class="border-t border-neutral-200 dark:border-neutral-700 mb-2"></div>
+      <div
+        class="flex flex-col gap-1 max-h-44 overflow-y-auto custom-scrollbar"
+        id="calendar-posts-list"
+      >
+      </div>
+    </div>
+  </div>
+</WidgetLayout>
+
+<script
+  is:inline
+  data-swup-ignore-script
+  define:vars={{ calendarDataUrl, postUrlPrefix }}
+>
+  function initPostCalendar() {
+    const yearEl = document.getElementById("cal-year");
+    const monthEl = document.getElementById("cal-month-label");
+    const gridEl = document.getElementById("cal-day-grid");
+    if (!gridEl) return;
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-11
+
+    if (yearEl) yearEl.textContent = year;
+    if (monthEl) monthEl.textContent = `${month + 1}月`;
+
+    fetch(calendarDataUrl)
+      .then((r) => r.json())
+      .then((posts) => {
+        // 按日期归组
+        const postMap = {};
+        posts.forEach((post) => {
+          const d = new Date(post.published);
+          if (d.getFullYear() !== year || d.getMonth() !== month) return;
+          const key = d.getDate();
+          if (!postMap[key]) postMap[key] = [];
+          postMap[key].push(post);
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = now.getDate();
+
+        let html = "";
+        for (let i = 0; i < firstDay; i++) {
+          html += '<div class="day-cell"></div>';
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+          const list = postMap[day] || [];
+          const hasPosts = list.length > 0;
+          const isToday = day === today;
+          html += `
+            <div
+              class="day-cell flex items-center justify-center rounded-full relative cursor-pointer text-xs leading-none transition
+                ${hasPosts ? "has-posts text-neutral-900 dark:text-neutral-100 font-bold hover:bg-(--btn-plain-bg-hover)" : "text-neutral-700 dark:text-neutral-300"}
+                ${isToday ? "is-today" : ""}"
+              data-day="${day}"
+              data-has-posts="${hasPosts}"
+            >
+              <span class="day-num">${day}</span>
+              ${hasPosts ? '<span class="day-dot absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-(--primary)"></span>' : ""}
+              ${hasPosts && list.length > 1 ? `<span class="day-count absolute top-0 right-0 text-[9px] text-(--primary) font-bold leading-none">${list.length}</span>` : ""}
+            </div>
+          `;
+        }
+        gridEl.innerHTML = html;
+
+        // 点击有文章的日期 → 展开当日文章列表
+        const wrapper = document.getElementById("calendar-posts");
+        const listEl = document.getElementById("calendar-posts-list");
+        let selected = null;
+
+        gridEl.querySelectorAll(".day-cell[data-has-posts='true']").forEach((cell) => {
+          cell.addEventListener("click", () => {
+            const day = cell.getAttribute("data-day");
+            if (selected === cell) {
+              cell.classList.remove("calendar-day-selected");
+              selected = null;
+              if (wrapper) wrapper.classList.add("hidden");
+              return;
+            }
+            if (selected) selected.classList.remove("calendar-day-selected");
+            selected = cell;
+            cell.classList.add("calendar-day-selected");
+            const list = postMap[day] || [];
+            if (listEl) {
+              listEl.innerHTML = list
+                .map((post) => {
+                  const d = new Date(post.published);
+                  return `
+                    <a href="${postUrlPrefix}${post.id}/" class="flex justify-between items-center text-xs text-neutral-700 dark:text-neutral-300 hover:text-(--primary) transition-colors px-2 py-1 rounded-md hover:bg-(--btn-plain-bg-hover)">
+                      <span class="truncate">${post.title}</span>
+                      <span class="text-neutral-500 dark:text-neutral-400 ml-2 whitespace-nowrap">${d.getMonth() + 1}-${d.getDate()}</span>
+                    </a>
+                  `;
+                })
+                .join("");
+            }
+            if (wrapper) wrapper.classList.remove("hidden");
+          });
+        });
+      })
+      .catch((e) => console.error("发文日历数据加载失败", e));
+  }
+
+  initPostCalendar();
+
+  document.addEventListener("swup:contentReplaced", () => {
+    setTimeout(initPostCalendar, 100);
+  });
+</script>
+
+<style>
+  /* 日历卡片更紧凑的内边距（覆盖 WidgetLayout 的 px-4 pb-4） */
+  :global(#calendar-widget) {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+    padding-bottom: 0.75rem;
+  }
+  :global(#calendar-widget.collapse-wrapper) {
+    padding-top: 0.75rem;
+  }
+
+  /* 日期行高度：窄栏配高行，形成细长形态 */
+  :global(#calendar-widget .day-cell) {
+    height: 27px;
+  }
+
+  /* 今天：实心主题色圆点 */
+  :global(#calendar-widget .day-cell.is-today) {
+    background-color: var(--primary);
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+
+  :global(#calendar-widget .day-cell.is-today .day-dot) {
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+
+  :global(#calendar-widget .day-cell.calendar-day-selected) {
+    background-color: var(--btn-regular-bg);
+  }
+</style>

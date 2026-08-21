@@ -1,0 +1,146 @@
+---
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { profileConfig } from "@/config/profileConfig";
+import { url } from "@/utils/url-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+	/** hero：首页主内容区（居中圆形头像 + 社交图标）；mini：侧边栏紧凑个人卡 */
+	variant?: "hero" | "mini";
+}
+
+const { style, variant = "mini" } = Astro.props;
+const className = Astro.props.class;
+const isHero = variant === "hero";
+---
+
+<div
+	class:list={[isHero ? ["px-6", "py-4"] : ["card-base", "p-3.5", "profile-mini"], className]}
+	style={style}
+>
+  {isHero && (
+    <a
+      aria-label="Go to About Page"
+      href={url("/about/")}
+      class="group block relative mx-auto mb-3 w-20 h-20 md:w-24 md:h-24
+         overflow-hidden rounded-full active:scale-95 transition-transform"
+    >
+      <div
+        class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
+          w-full h-full z-50 flex items-center justify-center rounded-full"
+      >
+        <Icon is:inline
+          name="fa7-regular:address-card"
+          class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-3xl"
+        />
+      </div>
+      <ImageWrapper
+        src={profileConfig.avatar || ""}
+        alt="Profile Image of the Author"
+        class="profile-avatar-image mx-auto w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        widths={[350]}
+        sizes="350px"
+      />
+    </a>
+  )}
+
+  {!isHero && (
+    <a
+      aria-label="前往关于页面"
+      href={url("/about/")}
+      class="profile-mini-avatar group relative mx-auto mb-2.5 block h-16 w-16 overflow-hidden rounded-full active:scale-95 transition-transform"
+    >
+      <ImageWrapper
+        src={profileConfig.avatar || ""}
+        alt={`${profileConfig.name} 的头像`}
+        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        widths={[128]}
+        sizes="64px"
+      />
+    </a>
+  )}
+
+  <div class="px-2">
+    <div
+      class:list={[
+        "font-bold text-center mb-1 transition",
+        isHero
+          ? "text-xl text-white"
+          : "text-lg dark:text-neutral-50",
+      ]}
+    >
+      {profileConfig.name}
+    </div>
+    <div
+      class="h-1 w-5 bg-(--primary) mx-auto rounded-full mb-2 transition"
+    >
+    </div>
+    <div
+      class:list={[
+        "text-center mb-2.5 transition",
+        isHero ? "text-white" : "text-neutral-400",
+      ]}
+    >
+      {profileConfig.bio}
+    </div>
+
+    {isHero && (
+      <div class="flex flex-wrap gap-2 justify-center mb-1">
+        {profileConfig.links.map(item => {
+          const showName = item.showName;
+          const btnClass = showName
+            ? "btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95"
+            : "btn-regular rounded-lg h-10 w-10 active:scale-90";
+
+          if (item.url.startsWith("mailto:")) {
+            const encodedEmail = Buffer.from(item.url.replace("mailto:", "")).toString("base64");
+            return (
+              <a
+                rel="me"
+                aria-label={item.name}
+                href="#"
+                data-encoded-email={encodedEmail}
+                onclick={`(function(){const e=this.getAttribute('data-encoded-email');this.href='mailto:'+atob(e);this.removeAttribute('data-encoded-email');this.removeAttribute('onclick');this.click();return false;}).call(this);`}
+                class={btnClass}
+              >
+                <Icon is:inline name={item.icon} class="text-[1.5rem]"></Icon>
+                {showName && item.name}
+              </a>
+            );
+          }
+          return (
+            <a rel="me" aria-label={item.name} href={item.url} target="_blank" class={btnClass}>
+              <Icon is:inline name={item.icon} class="text-[1.5rem]"></Icon>
+              {showName && item.name}
+            </a>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  .profile-mini {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-mini::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3.25rem;
+    pointer-events: none;
+    background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 24%, transparent), transparent 72%);
+  }
+
+  .profile-mini-avatar {
+    border: 2px solid color-mix(in oklab, white 74%, var(--primary));
+    box-shadow: 0 6px 20px color-mix(in oklab, var(--primary) 26%, transparent);
+  }
+</style>

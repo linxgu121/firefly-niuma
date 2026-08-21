@@ -1,0 +1,6 @@
+packages:
+  - '.'
+allowBuilds:
+  '@pagefind/windows-x64': true
+  esbuild: true
+  workerd: true

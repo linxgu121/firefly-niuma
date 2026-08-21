@@ -1,0 +1,107 @@
+---
+import { Icon } from "astro-icon/components";
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import type { WidgetComponentConfig } from "@/types/config";
+import {
+	getCategoryList,
+	getSortedPosts,
+	getTagList,
+} from "@/utils/content-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+
+const { class: className, style, widgetConfig } = Astro.props;
+
+const showTitle = widgetConfig?.showTitle !== false;
+
+// 获取所有文章
+const posts = await getSortedPosts();
+const categories = await getCategoryList();
+const tags = await getTagList();
+
+// 计算总字数
+let totalWords = 0;
+for (const post of posts) {
+	if (post.body) {
+		// 移除代码块和内联代码后计算字数
+		let text = post.body
+			.replace(/```[\s\S]*?```/g, "") // 移除代码块
+			.replace(/`[^`]*`/g, "") // 移除内联代码
+			.replace(/\s+/g, " ") // 合并空白
+			.trim();
+
+		// 分别计算中文字符和英文字符
+		const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+		const englishChars = text.match(/[a-zA-Z]/g) || [];
+
+		totalWords += chineseChars.length + englishChars.length;
+	}
+}
+
+// 格式化数字（添加千位分隔符）
+function formatNumber(num: number): string {
+	return num.toLocaleString();
+}
+
+const stats = [
+	{
+		icon: "material-symbols:article-outline",
+		label: i18n(I18nKey.siteStatsPostCount),
+		value: posts.length,
+	},
+	{
+		icon: "material-symbols:folder-outline",
+		label: i18n(I18nKey.siteStatsCategoryCount),
+		value: categories.length,
+	},
+	{
+		icon: "material-symbols:label-outline",
+		label: i18n(I18nKey.siteStatsTagCount),
+		value: tags.length,
+	},
+	{
+		icon: "material-symbols:text-ad-outline-rounded",
+		label: i18n(I18nKey.siteStatsTotalWords),
+		value: totalWords,
+		formatted: true,
+	},
+];
+---
+
+<WidgetLayout name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={className} style={style}>
+  <div class="grid grid-cols-2 gap-2">
+    {stats.map((stat) => (
+      <div class="stat-tile min-w-0 rounded-xl px-2.5 py-2.5">
+        <div class="mb-1.5 flex items-center gap-1.5">
+          <div class="text-(--primary) text-lg leading-none">
+            <Icon is:inline name={stat.icon} />
+          </div>
+          <span class="truncate text-[0.72rem] font-medium text-(--text-secondary)" title={stat.label}>
+            {stat.label}
+          </span>
+        </div>
+        <div class="flex min-w-0 items-baseline">
+          <span
+            class="truncate text-base font-bold text-(--text-primary)"
+          >
+            {stat.formatted ? formatNumber(stat.value) : stat.value}
+          </span>
+        </div>
+      </div>
+    ))}
+  </div>
+</WidgetLayout>
+
+<style>
+  .stat-tile {
+    border: 1px solid color-mix(in oklab, var(--border-subtle) 82%, transparent);
+    background: linear-gradient(145deg, color-mix(in oklab, var(--surface-glass-strong) 84%, white), color-mix(in oklab, var(--primary) 7%, transparent));
+    box-shadow: inset 0 1px 0 color-mix(in oklab, white 55%, transparent);
+  }
+</style>

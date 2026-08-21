@@ -1,0 +1,17 @@
+---
+import ArchivePanel from "@components/controls/ArchivePanel.astro";
+import CategoryBar from "@components/layout/CategoryBar.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout title={i18n(I18nKey.archive)}>
+  {siteConfig.categoryBar && (
+    <div id="category-bar-wrapper" class="mb-4 onload-animation">
+      <CategoryBar />
+    </div>
+  )}
+  <ArchivePanel />
+</MainGridLayout>

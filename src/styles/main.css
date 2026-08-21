@@ -315,6 +315,78 @@ body {
         box-shadow: var(--shadow-glass-soft), inset 0 1px 0 var(--glass-highlight);
         backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
     }
+
+    /*
+     * Overlay 模式的分区玻璃材质。
+     * 配置入口：backgroundWallpaper.overlay.glassMaterials。
+     * 主内容、左侧栏、右侧栏分别继承自己的透明度、模糊度、饱和度、边缘和阴影。
+     */
+    .wallpaper-transparent #content-wrapper :is(.card-base, .card-base-transparent) {
+        --glass-region-opacity: var(--glass-content-opacity);
+        --glass-region-blur: var(--glass-content-blur);
+        --glass-region-saturation: var(--glass-content-saturation);
+        --glass-region-border-opacity: var(--glass-content-border-opacity);
+        --glass-region-shadow-opacity: var(--glass-content-shadow-opacity);
+        --glass-blur: var(--glass-content-blur);
+        --glass-saturation: var(--glass-content-saturation);
+    }
+
+    .wallpaper-transparent #left-sidebar :is(.card-base, .card-base-transparent) {
+        --glass-region-opacity: var(--glass-left-opacity);
+        --glass-region-blur: var(--glass-left-blur);
+        --glass-region-saturation: var(--glass-left-saturation);
+        --glass-region-border-opacity: var(--glass-left-border-opacity);
+        --glass-region-shadow-opacity: var(--glass-left-shadow-opacity);
+        --glass-blur: var(--glass-left-blur);
+        --glass-saturation: var(--glass-left-saturation);
+    }
+
+    .wallpaper-transparent #right-sidebar :is(.card-base, .card-base-transparent) {
+        --glass-region-opacity: var(--glass-right-opacity);
+        --glass-region-blur: var(--glass-right-blur);
+        --glass-region-saturation: var(--glass-right-saturation);
+        --glass-region-border-opacity: var(--glass-right-border-opacity);
+        --glass-region-shadow-opacity: var(--glass-right-shadow-opacity);
+        --glass-blur: var(--glass-right-blur);
+        --glass-saturation: var(--glass-right-saturation);
+    }
+
+    .wallpaper-transparent :is(#content-wrapper, #left-sidebar, #right-sidebar)
+        :is(.card-base, .card-base-transparent) {
+        background:
+            linear-gradient(135deg, rgb(255 255 255 / 0.08), transparent 46%),
+            rgb(var(--glass-surface-rgb) / var(--glass-region-opacity)) !important;
+        border-color: rgb(255 255 255 / var(--glass-region-border-opacity));
+        box-shadow:
+            0 12px 32px oklch(
+                var(--glass-shadow-lightness) 0.025 var(--hue) /
+                var(--glass-region-shadow-opacity)
+            ),
+            inset 0 1px 0 rgb(255 255 255 / var(--glass-region-border-opacity));
+        backdrop-filter: blur(var(--glass-region-blur)) saturate(var(--glass-region-saturation)) !important;
+        -webkit-backdrop-filter: blur(var(--glass-region-blur)) saturate(var(--glass-region-saturation)) !important;
+    }
+
+    @media (max-width: 767px) {
+        .wallpaper-transparent #content-wrapper :is(.card-base, .card-base-transparent) {
+            --glass-region-opacity: var(--glass-mobile-opacity);
+            --glass-region-blur: var(--glass-mobile-blur);
+            --glass-region-saturation: var(--glass-mobile-saturation);
+            --glass-region-border-opacity: var(--glass-mobile-border-opacity);
+            --glass-region-shadow-opacity: var(--glass-mobile-shadow-opacity);
+            --glass-blur: var(--glass-mobile-blur);
+            --glass-saturation: var(--glass-mobile-saturation);
+        }
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+        .wallpaper-transparent :is(#content-wrapper, #left-sidebar, #right-sidebar)
+            :is(.card-base, .card-base-transparent) {
+            --glass-region-opacity: 0.94;
+            --glass-region-blur: 0px;
+            --glass-region-saturation: 100%;
+        }
+    }
  
     
     .wallpaper-transparent #navbar > div {

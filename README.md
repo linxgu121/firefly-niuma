@@ -2,13 +2,11 @@
 
 # niuma's Blog
 
-> 一个游戏开发者的个人博客 · UE / Unity 学习与实战笔记
->
 > 基于 **Astro + Tailwind CSS** 构建，衍生自开源主题 [Firefly](https://github.com/CuteLeaf/Firefly)（上游 [fuwari](https://github.com/saicaca/fuwari)）
 
 ![Astro](https://img.shields.io/badge/Astro-7.2-orange)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.x-38bdf8)
-![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
+![Node](https://img.shields.io/badge/node-%3E%3D22.23.0-brightgreen)
 ![pnpm](https://img.shields.io/badge/pnpm-11-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Version](https://img.shields.io/badge/version-miuma%20v1.1.6-165)
@@ -38,20 +36,43 @@ pnpm dev        # 本地开发 http://localhost:4321
 | :-- | :-- |
 | `pnpm dev` | 启动本地开发服务器 |
 | `pnpm build` | 完整构建（含 LQIP、字体子集、Pagefind 搜索索引） |
-| `pnpm deploy` | **一键上线**：构建 → 打包 → 直传阿里云 ECS → 原子切换 |
+| `pnpm deploy` | **一键上线**：构建 → 打包 → 直传服务器 |
 | `pnpm new-post <文件名>` | 创建新文章 |
 | `pnpm check` / `pnpm type-check` | 代码 / 类型检查 |
 | `pnpm format` / `pnpm lint` | Biome 格式化 / 检查 |
 
 ## 🎨 相对上游主题的主要改造
 
-- **部署管线**：本地构建经阿里云 Workbench 通道直传 ECS（无需 SSH / GitHub Actions），服务器原子切换 + 上一版保留回滚，详见 [docs/阿里云部署指南.md](docs/阿里云部署指南.md)
 - **首页 Hero**：`Play & Build` 打字机副标题 + 居中圆形头像简介，浮于动态壁纸之上
+- **真实内容分组**：置顶文章与最近文章独立展示，支持列表 / 网格切换和本地偏好记忆，单篇内容也保持完整布局
 - **发文日历**：重写为细长极简版（单月视图、圆点标记、当日文章展开）
 - **导航栏**：菜单右对齐、整体缩小；右侧边栏窄化（240px）并精简为日历 + 站点信息
 - **设计系统**：MiSans 正文字体、语义颜色令牌、玻璃卡片材质、壁纸自适应取色（AdaptivePalette）
+- **分区玻璃材质**：主内容、左侧栏、右侧栏和移动端可独立调整透明度、模糊度、饱和度、边缘与阴影
 - **内容隔离**：文章与音乐文件不进仓库（`.gitignore` 隔离，随部署自动备份到服务器）
 - **HTML 缓存策略**：`no-cache` + ETag 协商缓存，发布后立即可见
+
+### 首页内容配置
+
+首页 Hero 文案、打字文本、CTA、统计项目、置顶数量和最近文章默认布局统一配置在
+`src/config/homePageConfig.ts`。首页只读取真实文章数据，不会为了填充版面生成演示文章或虚假统计。
+
+### 分区玻璃材质配置
+
+配置入口位于 `src/config/backgroundWallpaper.ts` 的 `overlay.glassMaterials`：
+
+```ts
+glassMaterials: {
+  content: { opacity: 0.34, blur: 14, saturation: 138 },
+  leftSidebar: { opacity: 0.42, blur: 18, saturation: 145 },
+  rightSidebar: { opacity: 0.30, blur: 12, saturation: 132 },
+  mobile: { opacity: 0.52, blur: 8, saturation: 122 },
+}
+```
+
+每个区域还可设置 `borderOpacity` 和 `shadowOpacity`。未填写的侧栏字段会继承主内容配置；
+旧版 `overlay.cardOpacity` 继续作为兼容回退值。显示设置中的原卡片透明度滑块只调整主内容区，
+不会覆盖左右侧栏的独立材质。
 
 ## 🙏 致谢与上游
 

@@ -10,7 +10,8 @@ export const homePageConfig: HomePageConfig = {
 			"C++、蓝图、Shader 与引擎源码",
 			"热爱游戏，所以创造游戏",
 		],
-		description: "喜欢玩游戏，也热爱游戏开发。这里记录学习、实践和踩坑后的答案。",
+		description:
+			"喜欢玩游戏，也热爱游戏开发。这里记录学习、实践和踩坑后的答案。",
 		primaryCta: {
 			text: "浏览文章",
 			url: "#recent-posts",

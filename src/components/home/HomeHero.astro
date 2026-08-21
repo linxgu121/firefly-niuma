@@ -1,0 +1,279 @@
+---
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import TypewriterText from "@/components/features/TypewriterText.astro";
+import { homePageConfig, profileConfig } from "@/config";
+import type { HomeStatKey } from "@/types/config";
+import { url } from "@/utils/url-utils";
+
+interface Props {
+	posts: number;
+	categories: number;
+	tags: number;
+}
+
+const counts: Record<HomeStatKey, number> = {
+	posts: Astro.props.posts,
+	categories: Astro.props.categories,
+	tags: Astro.props.tags,
+};
+const avatar = profileConfig.avatar || "assets/images/aimily.png";
+---
+
+<section class="home-hero card-base onload-animation" aria-labelledby="home-hero-title">
+  <Icon is:inline name="material-symbols:star-rounded" class="hero-decoration hero-decoration-left" aria-hidden="true" />
+  <Icon is:inline name="material-symbols:auto-awesome-rounded" class="hero-decoration hero-decoration-right" aria-hidden="true" />
+
+  <a class="hero-avatar focus-ring" href={url("/about/")} aria-label={`了解 ${profileConfig.name}`}>
+    <ImageWrapper
+      src={avatar}
+      alt={`${profileConfig.name} 的头像`}
+      class="hero-avatar-image"
+      loading="eager"
+      fetchpriority="high"
+      width={208}
+      height={208}
+      widths={[104, 156, 208]}
+      sizes="(max-width: 640px) 88px, 104px"
+      showOverlay={false}
+    />
+    <span class="hero-avatar-ring" aria-hidden="true"></span>
+  </a>
+
+  <p class="hero-eyebrow">HELLO, I'M {profileConfig.name.toUpperCase()}</p>
+  <h1 id="home-hero-title" class="hero-title">{homePageConfig.hero.title}</h1>
+  <div class="hero-typewriter" aria-label={homePageConfig.hero.typewriterTexts[0]}>
+    <TypewriterText
+      text={homePageConfig.hero.typewriterTexts}
+      speed={74}
+      deleteSpeed={36}
+      pauseTime={2200}
+    />
+  </div>
+  <p class="hero-description">{homePageConfig.hero.description}</p>
+
+  <div class="hero-actions" aria-label="首页快捷入口">
+    <a class="hero-cta hero-cta-primary focus-ring" href={url(homePageConfig.hero.primaryCta.url)}>
+      <Icon is:inline name={homePageConfig.hero.primaryCta.icon} aria-hidden="true" />
+      <span>{homePageConfig.hero.primaryCta.text}</span>
+    </a>
+    <a class="hero-cta hero-cta-secondary focus-ring" href={url(homePageConfig.hero.secondaryCta.url)}>
+      <Icon is:inline name={homePageConfig.hero.secondaryCta.icon} aria-hidden="true" />
+      <span>{homePageConfig.hero.secondaryCta.text}</span>
+    </a>
+  </div>
+
+  <dl class="hero-stats" aria-label="站点内容统计">
+    {homePageConfig.statistics.map((stat) => (
+      <div class="hero-stat">
+        <dt>
+          <Icon is:inline name={stat.icon} aria-hidden="true" />
+          <span>{stat.label}</span>
+        </dt>
+        <dd>{counts[stat.key]}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .home-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(2rem, 5vw, 3.6rem) clamp(1rem, 4vw, 3.5rem) 1.6rem;
+    text-align: center;
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line-divider));
+    background:
+      radial-gradient(circle at 50% -25%, color-mix(in srgb, var(--primary) 19%, transparent), transparent 58%),
+      linear-gradient(145deg, color-mix(in srgb, var(--card-bg) 94%, white 6%), var(--card-bg));
+    box-shadow: var(--shadow-card);
+  }
+
+  .home-hero::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    opacity: 0.34;
+    background-image: radial-gradient(circle, color-mix(in srgb, var(--primary) 38%, transparent) 1px, transparent 1.5px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent 58%);
+    pointer-events: none;
+  }
+
+  .hero-decoration {
+    position: absolute;
+    color: color-mix(in srgb, var(--primary) 72%, white);
+    opacity: 0.62;
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--primary) 28%, transparent));
+    pointer-events: none;
+  }
+
+  .hero-decoration-left { left: 9%; top: 16%; transform: rotate(-12deg); }
+  .hero-decoration-right { right: 10%; top: 24%; transform: rotate(14deg); }
+
+  .hero-avatar {
+    position: relative;
+    display: block;
+    width: 6.5rem;
+    height: 6.5rem;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    transition: transform 220ms ease;
+  }
+
+  .hero-avatar-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+
+  .hero-avatar-ring {
+    position: absolute;
+    inset: -0.34rem;
+    border-radius: inherit;
+    border: 2px solid color-mix(in srgb, var(--primary) 58%, white);
+    box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--card-bg) 76%, transparent);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    margin: 0 0 0.35rem;
+    color: var(--text-50);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+  }
+
+  .hero-title {
+    margin: 0;
+    color: var(--text-90);
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 850;
+    line-height: 1.04;
+    letter-spacing: -0.055em;
+    background: linear-gradient(105deg, color-mix(in srgb, var(--primary) 86%, #6d77ff), var(--primary), color-mix(in srgb, var(--primary) 72%, #ff8fc7));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-typewriter {
+    min-height: 1.7em;
+    margin-top: 0.85rem;
+    color: var(--text-75);
+    font-size: clamp(0.92rem, 2vw, 1.08rem);
+    font-weight: 650;
+  }
+
+  .hero-description {
+    max-width: 36rem;
+    margin: 0.7rem auto 0;
+    color: var(--text-60);
+    font-size: 0.94rem;
+    line-height: 1.8;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+    margin-top: 1.35rem;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0 1.15rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+
+  .hero-cta :global(svg) { font-size: 1.15rem; }
+
+  .hero-cta-primary {
+    color: white;
+    background: var(--primary);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 28%, transparent);
+  }
+
+  .hero-cta-secondary {
+    color: var(--text-75);
+    border-color: color-mix(in srgb, var(--primary) 24%, var(--line-divider));
+    background: color-mix(in srgb, var(--card-bg) 76%, transparent);
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 31rem);
+    margin: 1.5rem 0 0;
+    padding-top: 1.1rem;
+    border-top: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line-divider));
+  }
+
+  .hero-stat { position: relative; padding: 0 0.75rem; }
+  .hero-stat + .hero-stat::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: 1px;
+    background: var(--line-divider);
+  }
+
+  .hero-stat dt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: var(--text-50);
+    font-size: 0.72rem;
+  }
+
+  .hero-stat dt :global(svg) { color: var(--primary); font-size: 0.95rem; }
+  .hero-stat dd {
+    margin: 0.12rem 0 0;
+    color: var(--text-90);
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) {
+    .hero-avatar:hover { transform: translateY(-3px) rotate(2deg); }
+    .hero-cta:hover { transform: translateY(-2px); }
+    .hero-cta-primary:hover { box-shadow: 0 11px 24px color-mix(in srgb, var(--primary) 35%, transparent); }
+    .hero-cta-secondary:hover { background: color-mix(in srgb, var(--primary) 10%, var(--card-bg)); }
+  }
+
+  @media (max-width: 640px) {
+    .home-hero { padding: 1.7rem 0.9rem 1.25rem; }
+    .hero-avatar { width: 5.5rem; height: 5.5rem; }
+    .hero-decoration { display: none; }
+    .hero-description { max-width: 19rem; font-size: 0.86rem; }
+    .hero-actions { width: 100%; }
+    .hero-cta { flex: 1 1 8rem; max-width: 10rem; padding-inline: 0.8rem; }
+    .hero-stats { margin-top: 1.25rem; }
+    .hero-stat { padding-inline: 0.35rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-avatar,
+    .hero-cta { transition: none; }
+  }
+</style>

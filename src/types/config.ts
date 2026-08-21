@@ -1,6 +1,9 @@
 export type { AnalyticsConfig } from "./analyticsConfig";
 export type { AnnouncementConfig } from "./announcementConfig";
-export type { BackgroundWallpaperConfig } from "./backgroundWallpaper";
+export type {
+	BackgroundWallpaperConfig,
+	GlassSurfaceConfig,
+} from "./backgroundWallpaper";
 export type {
 	BooknavFaviconConfig,
 	BooknavGroup,

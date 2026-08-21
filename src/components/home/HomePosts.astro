@@ -1,0 +1,374 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+import PostCard from "@/components/layout/PostCard.astro";
+import { homePageConfig, siteConfig } from "@/config";
+import { getPostUrlBySlug, url } from "@/utils/url-utils";
+
+interface Props {
+	pinned: CollectionEntry<"posts">[];
+	recent: CollectionEntry<"posts">[];
+	currentPage: number;
+	totalPosts: number;
+	totalPinned: number;
+	totalRecent: number;
+}
+
+const { pinned, recent, currentPage, totalPosts, totalPinned, totalRecent } =
+	Astro.props;
+
+const coverPositionClass =
+	siteConfig.postListLayout.coverPosition === "left" ? "cover-left" : "";
+const defaultLayout = homePageConfig.recent.defaultLayout;
+const storageKey = homePageConfig.recent.storageKey;
+const showPinned = currentPage === 1 && pinned.length > 0;
+
+const cardProps = (entry: CollectionEntry<"posts">, index: number) => ({
+	entry,
+	title: entry.data.title,
+	tags: entry.data.tags,
+	category: entry.data.category,
+	published: entry.data.published,
+	updated: entry.data.updated,
+	url: getPostUrlBySlug(entry.id),
+	image: entry.data.image,
+	description: entry.data.description,
+	draft: entry.data.draft,
+	pinned: entry.data.pinned,
+	password: !!entry.data.password,
+	loading: index < 2 ? ("eager" as const) : ("lazy" as const),
+});
+---
+
+{showPinned && (
+  <section class="home-post-section pinned-section" aria-labelledby="pinned-posts-title">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">PICKED FOR YOU</p>
+        <h2 id="pinned-posts-title">
+          <Icon is:inline name="material-symbols:keep-rounded" aria-hidden="true" />
+          {homePageConfig.pinned.title}
+        </h2>
+      </div>
+      <span class="section-count" aria-label={`共 ${totalPinned} 篇置顶文章`}>{totalPinned}</span>
+    </div>
+
+    <div class:list={["home-post-list pinned-list list-mode flex flex-col gap-4", coverPositionClass]}>
+      {pinned.map((entry, index) => (
+        <PostCard
+          {...cardProps(entry, index)}
+          class="onload-animation post-card-item home-post-card"
+          style={`animation-delay: calc(var(--content-delay) + ${index * 50}ms);`}
+        />
+      ))}
+    </div>
+  </section>
+)}
+
+<section id="recent-posts" class="home-post-section recent-section scroll-mt-24" aria-labelledby="recent-posts-title">
+  <div class="section-heading recent-heading">
+    <div>
+      <p class="section-kicker">LATEST NOTES</p>
+      <h2 id="recent-posts-title">
+        <Icon is:inline name="material-symbols:auto-stories-rounded" aria-hidden="true" />
+        {homePageConfig.recent.title}
+      </h2>
+      <p class="section-description">{homePageConfig.recent.description}</p>
+    </div>
+
+    <div class="recent-tools">
+      <span class="section-count" aria-label={`共 ${totalRecent} 篇最近文章`}>{totalRecent}</span>
+      <div class="layout-toggle" role="group" aria-label="文章布局">
+        <button
+          class="layout-button focus-ring-inset"
+          type="button"
+          data-home-layout="list"
+          aria-label="列表布局"
+          aria-pressed={defaultLayout === "list" ? "true" : "false"}
+        >
+          <Icon is:inline name="material-symbols:view-agenda-outline-rounded" aria-hidden="true" />
+        </button>
+        <button
+          class="layout-button focus-ring-inset"
+          type="button"
+          data-home-layout="grid"
+          aria-label="网格布局"
+          aria-pressed={defaultLayout === "grid" ? "true" : "false"}
+        >
+          <Icon is:inline name="material-symbols:grid-view-outline-rounded" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {recent.length > 0 ? (
+    <div
+      id="home-recent-post-list"
+      class:list={[
+        "home-post-list recent-list layout-transition",
+        defaultLayout === "grid" ? "grid-mode home-post-grid" : "list-mode flex flex-col gap-4",
+        coverPositionClass,
+      ]}
+      data-default-layout={defaultLayout}
+      data-storage-key={storageKey}
+    >
+      {recent.map((entry, index) => (
+        <PostCard
+          {...cardProps(entry, index)}
+          class="onload-animation post-card-item home-post-card"
+          style={`animation-delay: calc(var(--content-delay) + ${index * 50}ms);`}
+        />
+      ))}
+    </div>
+  ) : (
+    <div class="empty-state card-base" role="status">
+      <Icon is:inline name="material-symbols:auto-awesome-rounded" class="empty-icon" aria-hidden="true" />
+      <h3>{totalPosts === 0 ? "还没有文章" : "最近文章暂时为空"}</h3>
+      <p>
+        {totalPosts === 0
+          ? "第一篇开发笔记正在路上，先去关于页认识一下我吧。"
+          : "置顶内容仍可继续阅读，新的开发记录也会在这里出现。"}
+      </p>
+      {totalPosts === 0 && <a class="empty-link focus-ring" href={url("/about/")}>前往关于页</a>}
+    </div>
+  )}
+</section>
+
+{recent.length > 0 && (
+  <script is:inline define:vars={{ defaultLayout, storageKey }}>
+    (() => {
+      const valid = (value) => value === "list" || value === "grid";
+      let saved = null;
+      try { saved = localStorage.getItem(storageKey); } catch {}
+      const layout = valid(saved) ? saved : defaultLayout;
+      const container = document.getElementById("home-recent-post-list");
+      if (!container || !valid(layout)) return;
+      container.classList.toggle("list-mode", layout === "list");
+      container.classList.toggle("flex", layout === "list");
+      container.classList.toggle("flex-col", layout === "list");
+      container.classList.toggle("gap-4", layout === "list");
+      container.classList.toggle("grid-mode", layout === "grid");
+      container.classList.toggle("home-post-grid", layout === "grid");
+      document.querySelectorAll("[data-home-layout]").forEach((button) => {
+        button.setAttribute("aria-pressed", button.getAttribute("data-home-layout") === layout ? "true" : "false");
+      });
+    })();
+  </script>
+)}
+
+<script>
+  type HomeLayout = "list" | "grid";
+
+  function isHomeLayout(value: string | null): value is HomeLayout {
+    return value === "list" || value === "grid";
+  }
+
+  function applyHomeLayout(layout: HomeLayout, persist = true) {
+    const container = document.getElementById("home-recent-post-list");
+    if (!container) return;
+
+    container.classList.add("layout-switching");
+    const update = () => {
+      container.classList.toggle("list-mode", layout === "list");
+      container.classList.toggle("flex", layout === "list");
+      container.classList.toggle("flex-col", layout === "list");
+      container.classList.toggle("gap-4", layout === "list");
+      container.classList.toggle("grid-mode", layout === "grid");
+      container.classList.toggle("home-post-grid", layout === "grid");
+
+      document.querySelectorAll<HTMLButtonElement>("[data-home-layout]").forEach((button) => {
+        button.setAttribute("aria-pressed", button.dataset.homeLayout === layout ? "true" : "false");
+      });
+
+      if (persist) {
+        const key = container.dataset.storageKey || "homeRecentLayout";
+        try {
+          localStorage.setItem(key, layout);
+          localStorage.setItem("postListLayout", layout);
+        } catch {}
+      }
+
+      requestAnimationFrame(() => container.classList.remove("layout-switching"));
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      update();
+    } else {
+      window.setTimeout(update, 120);
+    }
+  }
+
+  function initHomeLayout() {
+    const container = document.getElementById("home-recent-post-list");
+    if (!container) return;
+
+    const key = container.dataset.storageKey || "homeRecentLayout";
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(key); } catch {}
+    const fallback = container.dataset.defaultLayout || "list";
+    applyHomeLayout(isHomeLayout(saved) ? saved : isHomeLayout(fallback) ? fallback : "list", false);
+
+    document.querySelectorAll<HTMLButtonElement>("[data-home-layout]").forEach((button) => {
+      if (button.dataset.layoutBound === "true") return;
+		button.dataset.layoutBound = "true";
+		button.addEventListener("click", () => {
+			const layout = button.dataset.homeLayout || null;
+			if (isHomeLayout(layout)) {
+				applyHomeLayout(layout, true);
+			}
+		});
+    });
+  }
+
+  const homeWindow = window as Window & { __homeLayoutBound?: boolean };
+  if (!homeWindow.__homeLayoutBound) {
+    homeWindow.__homeLayoutBound = true;
+	window.addEventListener("layoutChange", (event) => {
+		const customEvent = event as CustomEvent<{ layout?: string }>;
+		const layout = customEvent.detail?.layout || null;
+		if (isHomeLayout(layout)) {
+			applyHomeLayout(layout, true);
+		}
+	});
+    document.addEventListener("astro:page-load", initHomeLayout);
+    document.addEventListener("swup:contentReplaced", initHomeLayout);
+    document.addEventListener("swup:page:view", initHomeLayout);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initHomeLayout, { once: true });
+  } else {
+    initHomeLayout();
+  }
+</script>
+
+<style>
+  .home-post-section { margin-top: 1.15rem; }
+
+  .section-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    padding: 0 0.25rem;
+  }
+
+  .section-kicker {
+    margin: 0 0 0.18rem;
+    color: var(--primary);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+  }
+
+  .section-heading h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+    margin: 0;
+    color: var(--text-90);
+    font-size: clamp(1.15rem, 2vw, 1.4rem);
+    font-weight: 800;
+  }
+
+  .section-heading h2 :global(svg) { color: var(--primary); }
+
+  .section-description {
+    margin: 0.22rem 0 0;
+    color: var(--text-50);
+    font-size: 0.82rem;
+  }
+
+  .section-count {
+    display: inline-grid;
+    min-width: 1.85rem;
+    height: 1.85rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line-divider));
+    border-radius: 999px;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 8%, var(--card-bg));
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .recent-tools { display: flex; align-items: center; gap: 0.55rem; }
+  .layout-toggle {
+    display: flex;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line-divider));
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+  }
+
+  .layout-button {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 0;
+    border-radius: 0.55rem;
+    color: var(--text-50);
+    background: transparent;
+    cursor: pointer;
+    transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  }
+
+  .layout-button[aria-pressed="true"] {
+    color: white;
+    background: var(--primary);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 26%, transparent);
+  }
+
+  .home-post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: 1rem;
+  }
+
+  .layout-transition {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+
+  .layout-transition.layout-switching {
+    opacity: 0.55;
+    transform: translateY(3px);
+  }
+
+  .empty-state {
+    display: flex;
+    min-height: 13rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  .empty-icon { color: var(--primary); font-size: 2rem; }
+  .empty-state h3 { margin: 0.35rem 0 0; color: var(--text-90); font-size: 1.1rem; }
+  .empty-state p { max-width: 28rem; margin: 0.45rem 0 0; color: var(--text-50); font-size: 0.86rem; }
+  .empty-link { margin-top: 0.9rem; color: var(--primary); font-size: 0.85rem; font-weight: 700; }
+
+  @media (hover: hover) {
+    .layout-button:hover { color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+    .layout-button:active { transform: scale(0.92); }
+  }
+
+  @media (max-width: 520px) {
+    .recent-heading { align-items: flex-start; }
+    .section-description { max-width: 13rem; }
+    .recent-tools { flex-direction: column; align-items: flex-end; gap: 0.35rem; }
+    .layout-button { width: 2.5rem; height: 2.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .layout-transition,
+    .layout-button { transition: none; }
+  }
+</style>

@@ -1,113 +1,97 @@
 ---
-import type { GetStaticPaths } from "astro";
+import type { GetStaticPaths, Page } from "astro";
+import type { CollectionEntry } from "astro:content";
 import Pagination from "@/components/common/Pagination.astro";
-import TypewriterText from "@/components/features/TypewriterText.astro";
+import HomeHero from "@/components/home/HomeHero.astro";
+import HomePosts from "@/components/home/HomePosts.astro";
 import CategoryBar from "@/components/layout/CategoryBar.astro";
-import PostPage from "@/components/layout/PostPage.astro";
-import Profile from "@/components/widget/Profile.astro";
-import { backgroundWallpaper, siteConfig } from "@/config";
+import { homePageConfig, siteConfig } from "@/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getSortedPosts } from "@/utils/content-utils";
-export const getStaticPaths = (async ({ paginate }) => {
-	const allBlogPosts = await getSortedPosts();
-	// 使用配置中的文章数量
+import {
+	getCategoryList,
+	getHomePosts,
+	getTagList,
+} from "@/utils/content-utils";
+import { url } from "@/utils/url-utils";
+
+export const getStaticPaths = (async () => {
 	const pageSize = siteConfig.pagination.postsPerPage;
-	return paginate(allBlogPosts, { pageSize });
+	const pinnedLimit = homePageConfig.pinned.limit;
+	const firstPage = await getHomePosts(1, pageSize, pinnedLimit);
+
+	return Promise.all(
+		Array.from(
+			{ length: firstPage.pagination.totalPages },
+			async (_, index) => {
+				const pageNumber = index + 1;
+				const homeData =
+					pageNumber === 1
+						? firstPage
+						: await getHomePosts(pageNumber, pageSize, pinnedLimit);
+				return {
+					params: { page: pageNumber === 1 ? undefined : String(pageNumber) },
+					props: { homeData },
+				};
+			},
+		),
+	);
 }) satisfies GetStaticPaths;
-// https://github.com/withastro/astro/issues/6507#issuecomment-1489916992
 
-const { page } = Astro.props;
+const { homeData } = Astro.props;
+const { pinned, recent, pagination } = homeData;
+const [categories, tags] = await Promise.all([getCategoryList(), getTagList()]);
 
-const len = page.data.length;
-
-// overlay 模式下壁纸容器处于底层，标题改由内容流渲染（banner/fullscreen 由布局层渲染）
-const homeText = backgroundWallpaper.common?.homeText;
-const showIntroText =
-	backgroundWallpaper.mode === "overlay" &&
-	!!homeText?.enable &&
-	homeText?.title;
+const pagePath = (pageNumber: number) =>
+	pageNumber === 1 ? url("/") : url(`/${pageNumber}/`);
+const recentPage = {
+	data: recent,
+	start: (pagination.page - 1) * pagination.pageSize,
+	end: (pagination.page - 1) * pagination.pageSize + recent.length - 1,
+	size: pagination.pageSize,
+	total: pagination.totalRecent,
+	currentPage: pagination.page,
+	lastPage: pagination.totalPages,
+	url: {
+		current: pagePath(pagination.page),
+		prev: pagination.hasPrevious ? pagePath(pagination.page - 1) : undefined,
+		next: pagination.hasNext ? pagePath(pagination.page + 1) : undefined,
+		first: pagePath(1),
+		last: pagePath(pagination.totalPages),
+	},
+} as Page<CollectionEntry<"posts">>;
 ---
 
 <MainGridLayout>
-  {page.currentPage === 1 && showIntroText && (
-    <div class="text-center px-4 pt-1 pb-6 onload-animation">
-      <div
-        class="font-bold text-white leading-tight"
-        style={`font-size: min(${homeText.titleSize || "2.75rem"}, 8vw); text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.55);`}
-      >
-        {homeText.title}
-      </div>
-      {homeText.subtitle?.length ? (
-        <div
-          class="text-white/90 leading-snug mt-2"
-          style="font-size: 1.05rem; text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);"
-        >
-          {homeText.typewriter?.enable !== false ? (
-            <TypewriterText
-              text={homeText.subtitle}
-              speed={homeText.typewriter?.speed}
-              deleteSpeed={homeText.typewriter?.deleteSpeed}
-              pauseTime={homeText.typewriter?.pauseTime}
-            />
-          ) : (
-            homeText.subtitle[0]
-          )}
-        </div>
-      ) : null}
+  {pagination.page === 1 && homePageConfig.hero.enable && (
+    <div class="mb-4">
+      <HomeHero
+        posts={pagination.totalPosts}
+        categories={categories.length}
+        tags={tags.length}
+      />
     </div>
   )}
-  {page.currentPage === 1 && <Profile variant="hero" class="mb-4 onload-animation" />}
+
   {siteConfig.categoryBar && (
     <div id="category-bar-wrapper" class="mb-4 onload-animation">
       <CategoryBar />
     </div>
   )}
-  <PostPage page={page} />
-  {
-    page.total > page.size && (
-      <Pagination
-        class="mx-auto onload-animation"
-        page={page}
-        style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
-      />
-    )
-  }
+
+  <HomePosts
+    pinned={pinned}
+    recent={recent}
+    currentPage={pagination.page}
+    totalPosts={pagination.totalPosts}
+    totalPinned={pagination.totalPinned}
+    totalRecent={pagination.totalRecent}
+  />
+
+  {pagination.totalRecent > pagination.pageSize && (
+    <Pagination
+      class="mx-auto mt-5 onload-animation"
+      page={recentPage}
+      style={`animation-delay: calc(var(--content-delay) + ${recent.length * 50}ms)`}
+    />
+  )}
 </MainGridLayout>
-
-<script>
-  // 响应式分页处理脚本
-  document.addEventListener("DOMContentLoaded", function () {
-    // 如果启用了响应式分页，添加相应的CSS类
-    const responsiveEnabled = true; // ${siteConfig.pagination.responsive}
-    if (responsiveEnabled) {
-      const deviceType = getDeviceType();
-      document.body.classList.add(`device-${deviceType}`);
-
-      // 监听窗口大小变化
-      let resizeTimeout: any;
-      window.addEventListener("resize", function () {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function () {
-          const newDeviceType = getDeviceType();
-          const currentDeviceType = document.body.className.match(
-            /device-(mobile|tablet|desktop)/
-          )?.[1];
-
-          if (currentDeviceType !== newDeviceType) {
-            document.body.classList.remove(`device-${currentDeviceType}`);
-            document.body.classList.add(`device-${newDeviceType}`);
-          }
-        }, 250);
-      });
-    }
-  });
-
-  function getDeviceType() {
-    if (typeof window === "undefined") return "desktop";
-
-    const width = window.innerWidth;
-    if (width < 768) return "mobile";
-    if (width < 1024) return "tablet";
-    return "desktop";
-  }
-</script>

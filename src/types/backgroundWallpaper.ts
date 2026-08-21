@@ -8,7 +8,7 @@ export type BackgroundWallpaperConfig = {
 				desktop?: string | string[];
 				mobile?: string | string[];
 				playerUrl?: string | string[]; // 背景视频播放地址，支持单个视频路径或数组（多视频列表循环）
-	}; // 支持单个图片、图片数组或分别设置桌面端和移动端图片
+		}; // 支持单个图片、图片数组或分别设置桌面端和移动端图片
 	/** 根据当前可见壁纸的 cover 裁剪区域生成主题色。 */
 	adaptivePalette?: {
 		enabled: boolean;
@@ -107,10 +107,33 @@ export type BackgroundWallpaperConfig = {
 		zIndex?: number; // 层级，确保壁纸在合适的层级显示
 		opacity?: number; // 壁纸透明度，0-1之间
 		blur?: number; // 背景模糊程度，单位px
-		cardOpacity?: number; // 卡片背景透明度，0-1之间
+		cardOpacity?: number; // 兼容旧配置：未配置 glassMaterials 时的通用卡片透明度
+		glassMaterials?: {
+			/** 主内容区：Hero、分类条、文章卡片与正文面板。 */
+			content?: GlassSurfaceConfig;
+			/** 桌面左侧栏组件。 */
+			leftSidebar?: GlassSurfaceConfig;
+			/** 桌面右侧栏组件。 */
+			rightSidebar?: GlassSurfaceConfig;
+			/** 768px 以下主内容区的轻量材质，侧栏在移动端隐藏。 */
+			mobile?: GlassSurfaceConfig;
+		};
 	};
 	// 全屏壁纸模式特有配置
 	fullscreen?: {
 		position?: string; // 壁纸位置，支持CSS object-position的所有值
 	};
+};
+
+export type GlassSurfaceConfig = {
+	/** 表面不透明度，0-1。 */
+	opacity?: number;
+	/** 背景毛玻璃模糊度，单位 px。 */
+	blur?: number;
+	/** 背景饱和度，100 为原始色彩。 */
+	saturation?: number;
+	/** 玻璃边缘高光透明度，0-1。 */
+	borderOpacity?: number;
+	/** 与主题色联动的投影透明度，0-1。 */
+	shadowOpacity?: number;
 };

@@ -159,8 +159,43 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		opacity: 0.9,
 		// 背景模糊度
 		blur: 0,
-		// 卡片透明度，0-1之间，值越小越透明
+		// 兼容旧版的通用卡片透明度；分区材质未填写时作为回退值
 		cardOpacity: 0.03,
+		// 分区玻璃材质：主内容、左右侧栏可以分别调透明度、模糊度、饱和度、边缘和阴影
+		glassMaterials: {
+			// 主内容保持轻透，让 Hero 与文章卡片和壁纸自然融合
+			content: {
+				opacity: 0.34,
+				blur: 14,
+				saturation: 138,
+				borderOpacity: 0.18,
+				shadowOpacity: 0.12,
+			},
+			// 左栏信息更密集，适当提高遮罩和模糊以保证头像、公告、音乐可读
+			leftSidebar: {
+				opacity: 0.42,
+				blur: 18,
+				saturation: 145,
+				borderOpacity: 0.22,
+				shadowOpacity: 0.14,
+			},
+			// 右栏以统计、日历为主，做得更轻，避免和正文争夺注意力
+			rightSidebar: {
+				opacity: 0.3,
+				blur: 12,
+				saturation: 132,
+				borderOpacity: 0.16,
+				shadowOpacity: 0.1,
+			},
+			// 移动端减少模糊计算，并提高底色保证小屏文字清晰
+			mobile: {
+				opacity: 0.52,
+				blur: 8,
+				saturation: 122,
+				borderOpacity: 0.18,
+				shadowOpacity: 0.08,
+			},
+		},
 	},
 	// 全屏壁纸模式特有配置
 	fullscreen: {

@@ -28,7 +28,7 @@ import {
 	PAGE_WIDTH,
 } from "@/constants/constants";
 import { defaultFavicons } from "@/constants/icon";
-import type { Favicon } from "@/types/config";
+import type { Favicon, GlassSurfaceConfig } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 
@@ -71,6 +71,63 @@ const adaptivePaletteTransition =
 const initialPaletteHue = backgroundWallpaper.adaptivePalette?.enabled
 	? adaptiveFallbackHue
 	: configHue;
+
+type ResolvedGlassSurface = Required<GlassSurfaceConfig>;
+
+const clampGlassValue = (value: number, min: number, max: number) =>
+	Math.min(max, Math.max(min, value));
+
+const baseGlassSurface: ResolvedGlassSurface = {
+	opacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.6,
+	blur: 14,
+	saturation: 138,
+	borderOpacity: 0.18,
+	shadowOpacity: 0.11,
+};
+
+const resolveGlassSurface = (
+	config: GlassSurfaceConfig | undefined,
+	fallback: ResolvedGlassSurface,
+): ResolvedGlassSurface => ({
+	opacity: clampGlassValue(config?.opacity ?? fallback.opacity, 0, 1),
+	blur: clampGlassValue(config?.blur ?? fallback.blur, 0, 40),
+	saturation: clampGlassValue(
+		config?.saturation ?? fallback.saturation,
+		100,
+		200,
+	),
+	borderOpacity: clampGlassValue(
+		config?.borderOpacity ?? fallback.borderOpacity,
+		0,
+		1,
+	),
+	shadowOpacity: clampGlassValue(
+		config?.shadowOpacity ?? fallback.shadowOpacity,
+		0,
+		1,
+	),
+});
+
+const configuredGlassMaterials = backgroundWallpaper.overlay?.glassMaterials;
+const contentGlassSurface = resolveGlassSurface(
+	configuredGlassMaterials?.content,
+	baseGlassSurface,
+);
+const leftGlassSurface = resolveGlassSurface(
+	configuredGlassMaterials?.leftSidebar,
+	contentGlassSurface,
+);
+const rightGlassSurface = resolveGlassSurface(
+	configuredGlassMaterials?.rightSidebar,
+	contentGlassSurface,
+);
+const mobileGlassSurface = resolveGlassSurface(
+	configuredGlassMaterials?.mobile,
+	{
+		...contentGlassSurface,
+		blur: Math.min(contentGlassSurface.blur, 8),
+	},
+);
 
 // 获取导航栏透明模式配置
 const navbarTransparentMode =
@@ -289,6 +346,7 @@ const siteLang = lang.replace("_", "-");
         lightTheme: expressiveCodeConfig.lightTheme,
         baseUrl: import.meta.env.BASE_URL,
         cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.6,
+		contentGlassOpacity: contentGlassSurface.opacity,
       }}
     >
       // 主题初始化 - 与setting-utils.ts保持一致
@@ -349,10 +407,17 @@ const siteLang = lang.replace("_", "-");
       // 设置卡片透明度（全屏透明模式下使用），优先使用用户自定义值
       const storedCardOpacity = getStoredValue("overlayCardOpacity");
       const parsedCardOpacity = storedCardOpacity === null ? NaN : Number.parseFloat(storedCardOpacity);
-      const resolvedCardOpacity = Number.isFinite(parsedCardOpacity)
+      document.documentElement.style.setProperty(
+        "--card-transparent-opacity",
+        String(cardTransparentOpacity)
+      );
+      const resolvedContentGlassOpacity = Number.isFinite(parsedCardOpacity)
         ? Math.min(1, Math.max(0, parsedCardOpacity))
-        : cardTransparentOpacity;
-      document.documentElement.style.setProperty("--card-transparent-opacity", String(resolvedCardOpacity));
+        : contentGlassOpacity;
+      document.documentElement.style.setProperty(
+        "--glass-content-opacity",
+        String(resolvedContentGlassOpacity)
+      );
 
       // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
       // 使用更准确的窗口高度计算
@@ -591,6 +656,26 @@ const siteLang = lang.replace("_", "-");
         configHue,
         "page-width": `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`,
         "navbar-panel-blur": `${navbarPanelBlur}px`,
+		"glass-content-opacity": contentGlassSurface.opacity,
+		"glass-content-blur": `${contentGlassSurface.blur}px`,
+		"glass-content-saturation": `${contentGlassSurface.saturation}%`,
+		"glass-content-border-opacity": contentGlassSurface.borderOpacity,
+		"glass-content-shadow-opacity": contentGlassSurface.shadowOpacity,
+		"glass-left-opacity": leftGlassSurface.opacity,
+		"glass-left-blur": `${leftGlassSurface.blur}px`,
+		"glass-left-saturation": `${leftGlassSurface.saturation}%`,
+		"glass-left-border-opacity": leftGlassSurface.borderOpacity,
+		"glass-left-shadow-opacity": leftGlassSurface.shadowOpacity,
+		"glass-right-opacity": rightGlassSurface.opacity,
+		"glass-right-blur": `${rightGlassSurface.blur}px`,
+		"glass-right-saturation": `${rightGlassSurface.saturation}%`,
+		"glass-right-border-opacity": rightGlassSurface.borderOpacity,
+		"glass-right-shadow-opacity": rightGlassSurface.shadowOpacity,
+		"glass-mobile-opacity": mobileGlassSurface.opacity,
+		"glass-mobile-blur": `${mobileGlassSurface.blur}px`,
+		"glass-mobile-saturation": `${mobileGlassSurface.saturation}%`,
+		"glass-mobile-border-opacity": mobileGlassSurface.borderOpacity,
+		"glass-mobile-shadow-opacity": mobileGlassSurface.shadowOpacity,
       }}
     ></style>
     <!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why -->

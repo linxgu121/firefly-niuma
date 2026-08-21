@@ -19,6 +19,7 @@ export type {
 	FooterConfig,
 	GalleryAlbum,
 	GalleryConfig,
+	GlassSurfaceConfig,
 	HomePageConfig,
 	LicenseConfig,
 	MermaidConfig,

@@ -284,6 +284,32 @@ const minutes = remarkPluginFrontmatter.minutes;
 </div>
 
 <style define:vars={{ coverWidth, descriptionClampLines }}>
+  .post-card-wrapper {
+    border: 1px solid color-mix(in srgb, var(--primary) 11%, var(--line-divider));
+    box-shadow: var(--shadow-card);
+    transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  }
+
+  .post-card-wrapper.pinned {
+    border-color: color-mix(in srgb, var(--primary) 36%, var(--line-divider));
+    background:
+      linear-gradient(130deg, color-mix(in srgb, var(--primary) 10%, transparent), transparent 46%),
+      var(--card-bg);
+  }
+
+  .post-card-wrapper::after {
+    content: "";
+    position: absolute;
+    z-index: 30;
+    inset: -35% auto -35% -48%;
+    width: 28%;
+    opacity: 0;
+    transform: rotate(16deg) translateX(0);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, white 42%, transparent), transparent);
+    transition: transform 520ms ease, opacity 180ms ease;
+    pointer-events: none;
+  }
+
   .description-clamped {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -472,5 +498,29 @@ const minutes = remarkPluginFrontmatter.minutes;
 
   :global(.grid-mode) .post-card-enter-btn {
     display: flex !important;
+  }
+
+  @media (hover: hover) {
+    .post-card-wrapper:hover {
+      transform: translateY(-3px);
+      border-color: color-mix(in srgb, var(--primary) 28%, var(--line-divider));
+      box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+
+    .post-card-wrapper:hover::after {
+      opacity: 1;
+      transform: rotate(16deg) translateX(620%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-card-wrapper,
+    .post-card-wrapper::after {
+      transition: none;
+    }
+
+    .post-card-wrapper::after {
+      display: none;
+    }
   }
 </style>

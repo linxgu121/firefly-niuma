@@ -1128,8 +1128,8 @@ const hasMultipleImages =
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
-                {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
-                <h1 class="sr-only">{title}</h1>
+                {/* 文章页在正文头部提供可见 h1；其他页面继续使用隐藏标题兜底。 */}
+                {!setOGTypeArticle && <h1 class="sr-only">{title}</h1>}
                 <div id="content-wrapper" class="onload-animation transition-leaving">
                     <slot></slot>
                 </div>

@@ -26,6 +26,7 @@ export class TOCManager {
 	private contentId: string;
 	private indicatorId: string;
 	private scrollOffset: number;
+	private readonly boundHandleClick = (event: Event) => this.handleClick(event);
 
 	constructor(config: TOCConfig) {
 		this.contentId = config.contentId;
@@ -196,6 +197,7 @@ export class TOCManager {
 		// 移除所有活动状态
 		this.tocItems.forEach((item) => {
 			item.classList.remove("visible");
+			item.removeAttribute("aria-current");
 		});
 
 		const visibleHeadingIds = this.getVisibleHeadingIds();
@@ -209,6 +211,7 @@ export class TOCManager {
 		// 添加活动状态
 		activeItems.forEach((item) => {
 			item.classList.add("visible");
+			item.setAttribute("aria-current", "location");
 		});
 
 		// 更新活动指示器
@@ -287,7 +290,10 @@ export class TOCManager {
 
 				tocContainer.scrollTo({
 					top: targetScroll,
-					behavior: "smooth",
+					behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+						.matches
+						? "auto"
+						: "smooth",
 				});
 			}
 		}, 100);
@@ -305,6 +311,12 @@ export class TOCManager {
 		const targetElement = document.getElementById(id);
 
 		if (targetElement) {
+			const encodedHash = `#${encodeURIComponent(id)}`;
+			window.tocInternalNavigation = true;
+			if (window.location.hash !== encodedHash) {
+				window.history.pushState(null, "", encodedHash);
+			}
+
 			const targetTop =
 				targetElement.getBoundingClientRect().top +
 				window.pageYOffset -
@@ -312,8 +324,18 @@ export class TOCManager {
 
 			window.scrollTo({
 				top: targetTop,
-				behavior: "smooth",
+				behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+					? "auto"
+					: "smooth",
 			});
+
+			if (!targetElement.hasAttribute("tabindex")) {
+				targetElement.setAttribute("tabindex", "-1");
+			}
+			targetElement.focus({ preventScroll: true });
+			window.setTimeout(() => {
+				window.tocInternalNavigation = false;
+			}, 0);
 		}
 	}
 
@@ -349,7 +371,8 @@ export class TOCManager {
 	 */
 	public bindClickEvents(): void {
 		this.tocItems.forEach((item) => {
-			item.addEventListener("click", this.handleClick.bind(this));
+			item.removeEventListener("click", this.boundHandleClick);
+			item.addEventListener("click", this.boundHandleClick);
 		});
 	}
 
@@ -357,6 +380,11 @@ export class TOCManager {
 	 * 清理
 	 */
 	public cleanup(): void {
+		this.tocItems.forEach((item) => {
+			item.removeEventListener("click", this.boundHandleClick);
+			item.removeAttribute("aria-current");
+		});
+		this.tocItems = [];
 		if (this.observer) {
 			this.observer.disconnect();
 			this.observer = null;

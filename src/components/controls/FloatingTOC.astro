@@ -33,7 +33,7 @@ const hideSidebarOnPostPage =
     id="floating-toc-btn"
     icon="material-symbols:format-list-bulleted"
     toggleIcon="material-symbols:close"
-    ariaLabel="Table of Contents"
+    ariaLabel={i18n(I18nKey.tableOfContents)}
     onclick="window.toggleFloatingTOC()"
     class="hide"
   />
@@ -45,9 +45,10 @@ const hideSidebarOnPostPage =
     style="background-color: var(--card-bg-transparent);"
     >
     <div class="toc-scroll-container px-3">
-        <div
+        <nav
         class="toc-content"
         id="floating-toc-content"
+        aria-label={i18n(I18nKey.tableOfContents)}
         style="width: 100%; max-width: 100%;"
         >
         {!encrypted && items.length > 0 && (
@@ -83,7 +84,7 @@ const hideSidebarOnPostPage =
           </div>
         )}
         {/* 加密文章：留空，客户端解密后由 TOCManager 填充 */}
-        </div>
+        </nav>
     </div>
   </div>
 </div>

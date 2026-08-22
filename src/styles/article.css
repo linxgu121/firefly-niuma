@@ -1,0 +1,446 @@
+/* 文章阅读页：在保留主题变量和壁纸材质的前提下，统一头部、正文与目录节奏。 */
+
+.article-card-shell,
+.article-post-container,
+.article-reading-column,
+.article-reading-column .markdown-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.article-post-container {
+  padding: clamp(1.1rem, 2.4vw, 2.25rem);
+}
+
+.article-header {
+  width: min(100%, 72ch);
+  margin-inline: auto;
+  padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.article-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  margin-bottom: 1.15rem;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.article-breadcrumb a,
+.article-breadcrumb [aria-current="page"] {
+  min-width: 0;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.article-breadcrumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 0.4rem;
+  transition:
+    color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+
+.article-breadcrumb a:hover {
+  color: var(--primary);
+  background: var(--btn-plain-bg-hover);
+}
+
+.article-breadcrumb a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.article-breadcrumb-separator {
+  flex: 0 0 auto;
+  color: color-mix(in oklab, var(--text-tertiary) 65%, transparent);
+  font-size: 1rem;
+}
+
+.article-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 1rem;
+  margin-bottom: 0.8rem;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.article-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.article-stat-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 0.55rem;
+  background: color-mix(in oklab, var(--primary) 10%, var(--card-bg));
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+.article-title {
+  position: relative;
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--text-primary);
+  font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.article-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.14em;
+  width: 0.25rem;
+  height: 0.9em;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.article-description {
+  margin: 1.05rem 0 0;
+  padding: 0.85rem 1rem;
+  border-left: 2px solid color-mix(in oklab, var(--primary) 74%, transparent);
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.article-header-meta {
+  margin-top: 1.1rem;
+}
+
+.article-header-meta.post-meta-root {
+  gap: 0.5rem 0.65rem;
+}
+
+.article-header-meta.post-meta-root > div {
+  min-height: 2rem;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.65rem;
+  background: color-mix(in oklab, var(--card-bg) 76%, transparent);
+}
+
+.article-header-meta .meta-icon {
+  margin-right: 0.3rem;
+}
+
+.article-header-divider {
+  height: 1px;
+  margin-top: clamp(1.35rem, 3vw, 2rem);
+  background: color-mix(in oklab, var(--primary) 24%, var(--line-divider));
+}
+
+.article-cover-header {
+  position: relative;
+  min-height: clamp(15rem, 34vw, 24rem);
+  margin: calc(clamp(1.1rem, 2.4vw, 2.25rem) * -1);
+  margin-bottom: clamp(1.35rem, 3vw, 2rem);
+  overflow: hidden;
+}
+
+.article-cover-header .article-cover-breadcrumb {
+  position: absolute;
+  inset: 0.85rem auto auto 1rem;
+  z-index: 12;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  border-radius: 0.65rem;
+  background: rgb(24 31 40 / 0.42);
+  color: rgb(248 250 252 / 0.86);
+  backdrop-filter: blur(10px) saturate(130%);
+}
+
+.article-cover-breadcrumb a,
+.article-cover-breadcrumb [aria-current="page"] {
+  color: rgb(248 250 252 / 0.9);
+}
+
+.article-cover-title {
+  margin: 0;
+  color: rgb(248 250 252 / 0.98);
+  font-size: clamp(1.65rem, 3.4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.article-cover-title::before {
+  content: none;
+}
+
+.article-reading-column {
+  width: min(100%, 65ch);
+  margin-inline: auto;
+}
+
+.article-reading-column .custom-md {
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 0.96rem + 0.15vw, 1.075rem);
+  line-height: 1.88;
+}
+
+.article-reading-column .custom-md > :first-child {
+  margin-top: 0;
+}
+
+.article-reading-column .custom-md > :last-child {
+  margin-bottom: 0;
+}
+
+.article-reading-column .custom-md :is(p, li, dd, figcaption) {
+  overflow-wrap: anywhere;
+}
+
+.article-reading-column .custom-md p {
+  margin-block: 1.1em;
+}
+
+.article-reading-column .custom-md :is(ul, ol) {
+  padding-inline-start: 1.45rem;
+}
+
+.article-reading-column .custom-md li {
+  margin-block: 0.38em;
+  padding-inline-start: 0.18rem;
+}
+
+.article-reading-column .custom-md li::marker {
+  font-weight: 700;
+}
+
+.article-reading-column .custom-md :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.article-reading-column .custom-md h1 {
+  margin: 3.2rem 0 1.25rem;
+  font-size: clamp(1.9rem, 4vw, 2.4rem);
+}
+
+.article-reading-column .custom-md h2 {
+  margin: 3.35rem 0 1.15rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--primary) 22%, var(--line-divider));
+  font-size: clamp(1.55rem, 3.4vw, 1.95rem);
+}
+
+.article-reading-column .custom-md h3 {
+  margin: 2.5rem 0 0.9rem;
+  font-size: clamp(1.28rem, 2.8vw, 1.52rem);
+}
+
+.article-reading-column .custom-md :is(h4, h5, h6) {
+  margin: 2rem 0 0.75rem;
+  font-size: clamp(1.08rem, 2.2vw, 1.22rem);
+}
+
+.article-reading-column .custom-md :is(h1, h2, h3, h4, h5, h6):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 0.3rem;
+  border-radius: 0.25rem;
+}
+
+.article-reading-column .custom-md :is(h1, h2, h3, h4, h5, h6):focus-within .anchor {
+  opacity: 1 !important;
+}
+
+.article-reading-column .custom-md blockquote {
+  margin: 1.75rem 0;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: color-mix(in oklab, var(--primary) 7%, var(--card-bg));
+  color: var(--text-secondary);
+}
+
+.article-reading-column .custom-md blockquote::before {
+  content: none;
+}
+
+.article-reading-column .custom-md blockquote > :first-child {
+  margin-top: 0;
+}
+
+.article-reading-column .custom-md blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.article-reading-column .custom-md :not(pre) > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.article-reading-column :is(.expressive-code, .rehype-code-group, .horizontal-scroll-container),
+.article-reading-column .expressive-code .frame,
+.article-reading-column .expressive-code pre {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.article-reading-column .expressive-code .frame {
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--primary) 16%, var(--line-divider));
+  border-radius: 0.8rem;
+}
+
+.article-reading-column .expressive-code pre {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
+}
+
+.article-reading-column .custom-md > table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.article-reading-column .custom-md :is(figure, picture, img, video, iframe) {
+  max-width: 100%;
+}
+
+.article-reading-column .custom-md :is(img, video) {
+  height: auto;
+}
+
+.article-reading-column .custom-md figure {
+  margin-inline: 0;
+}
+
+.article-reading-column .custom-md figcaption {
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.article-reading-column .custom-md hr {
+  margin-block: 2.6rem;
+  border-style: solid;
+  border-color: color-mix(in oklab, var(--primary) 18%, var(--line-divider));
+}
+
+#right-sidebar widget-layout:has(#sidebar-toc) {
+  border-color: color-mix(in oklab, var(--primary) 20%, var(--border-subtle));
+}
+
+#right-sidebar widget-layout:has(#sidebar-toc) .widget-title {
+  margin-bottom: 0.7rem;
+}
+
+@media (max-width: 767px) {
+  .article-post-container {
+    padding: 1.2rem;
+  }
+
+  .article-header {
+    padding-bottom: 1.45rem;
+  }
+
+  .article-breadcrumb {
+    margin-bottom: 0.95rem;
+  }
+
+  .article-breadcrumb a,
+  .article-breadcrumb [aria-current="page"] {
+    max-width: 9.5rem;
+  }
+
+  .article-title {
+    padding-left: 0.8rem;
+    font-size: clamp(1.65rem, 7.2vw, 2.1rem);
+    letter-spacing: -0.028em;
+    line-height: 1.2;
+  }
+
+  .article-description {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .article-header-meta.post-meta-root > div {
+    max-width: 100%;
+  }
+
+  .article-cover-header {
+    min-height: 17rem;
+    margin: -1.2rem;
+    margin-bottom: 1.35rem;
+  }
+
+  .article-cover-header .article-cover-breadcrumb {
+    inset: 0.75rem auto auto 0.75rem;
+    max-width: calc(100% - 1.5rem);
+  }
+
+  .article-reading-column .custom-md {
+    font-size: 1rem;
+    line-height: 1.82;
+  }
+
+  .article-reading-column .custom-md h2 {
+    margin-top: 2.75rem;
+  }
+
+  .article-reading-column .custom-md h3 {
+    margin-top: 2.15rem;
+  }
+
+  body:has(#mobile-post-toc:not([hidden])) #floating-toc-wrapper {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .article-header-meta.post-meta-root > div,
+  .article-reading-column .custom-md blockquote {
+    background: var(--card-bg);
+  }
+
+  .article-cover-header .article-cover-breadcrumb {
+    background: rgb(24 31 40 / 0.94);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-breadcrumb a {
+    transition-duration: 1ms;
+  }
+}

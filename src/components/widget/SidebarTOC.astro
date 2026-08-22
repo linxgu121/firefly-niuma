@@ -37,9 +37,10 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
   style={style}
 >
   <div class="toc-scroll-container custom-scrollbar">
-    <div
+    <nav
       class="toc-content"
       id="sidebar-toc-content"
+      aria-label={i18n(I18nKey.tableOfContents)}
     >
       {!encrypted && items.length > 0 && (
         <>
@@ -74,7 +75,7 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
         </div>
       )}
       {/* 加密文章：留空，客户端解密后由 TOCManager 填充 */}
-    </div>
+    </nav>
   </div>
 </WidgetLayout>
 

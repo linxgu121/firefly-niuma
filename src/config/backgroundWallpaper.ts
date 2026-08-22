@@ -165,10 +165,15 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		glassMaterials: {
 			// 主内容保持轻透，让 Hero 与文章卡片和壁纸自然融合
 			content: {
+				// 透明度
 				opacity: 0.34,
+				// 背景模糊度
 				blur: 14,
+				// 饱和度 %，>100提高色彩饱和度
 				saturation: 138,
+				// 边框透明度 0~1
 				borderOpacity: 0.18,
+				// 阴影透明度 0~1
 				shadowOpacity: 0.12,
 			},
 			// 左栏信息更密集，适当提高遮罩和模糊以保证头像、公告、音乐可读

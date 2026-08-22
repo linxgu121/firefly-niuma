@@ -1,0 +1,265 @@
+---
+import type { MarkdownHeading } from "astro";
+import { Icon } from "astro-icon/components";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { computeTocItems } from "@/utils/toc-shared";
+
+interface Props {
+	headings?: MarkdownHeading[];
+	encrypted?: boolean;
+}
+
+const { headings = [], encrypted = false } = Astro.props;
+const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
+---
+
+<details
+  id="mobile-post-toc"
+  class="mobile-post-toc"
+  hidden={encrypted || items.length === 0}
+>
+  <summary class="mobile-post-toc-summary">
+    <span class="mobile-post-toc-icon" aria-hidden="true">
+      <Icon is:inline name="material-symbols:format-list-bulleted-rounded" />
+    </span>
+    <span class="mobile-post-toc-title">{i18n(I18nKey.tableOfContents)}</span>
+    <span
+      id="mobile-post-toc-count"
+      class="mobile-post-toc-count"
+      aria-label={`${items.length} ${i18n(I18nKey.tableOfContents)}`}
+    >
+      {items.length}
+    </span>
+    <Icon
+      is:inline
+      name="material-symbols:keyboard-arrow-down-rounded"
+      class="mobile-post-toc-chevron"
+      aria-hidden="true"
+    />
+  </summary>
+
+  <div class="mobile-post-toc-panel">
+    <div class="toc-scroll-container custom-scrollbar">
+      <nav
+        id="mobile-post-toc-content"
+        class="toc-content"
+        aria-label={i18n(I18nKey.tableOfContents)}
+      >
+        {!encrypted && items.map((item) => (
+          <a
+            href={item.href}
+            class={`toc-item toc-level-${item.depthLevel}`}
+            data-heading-id={item.headingId}
+            aria-label={item.text}
+            title={item.text}
+          >
+            <span class={`toc-badge ${item.badgeKind === "index" ? "toc-badge-index" : ""}`}>
+              {item.badgeKind === "index" ? (
+                item.badgeIndex
+              ) : item.badgeKind === "dot" ? (
+                <span class="toc-badge-dot"></span>
+              ) : (
+                <span class="toc-badge-dot toc-badge-dot-sm"></span>
+              )}
+            </span>
+            <span class={`toc-label ${item.labelPrimary ? "toc-label-primary" : "toc-label-secondary"}`}>
+              {item.text}
+            </span>
+          </a>
+        ))}
+        <div
+          id="mobile-post-active-indicator"
+          class="toc-active-indicator"
+          style="opacity: 0;"
+        ></div>
+      </nav>
+    </div>
+  </div>
+</details>
+
+<script>
+  import { TOCManager } from "@/utils/toc-utils";
+
+  type MobilePostTOCState = {
+    manager: TOCManager | null;
+    listenersBound: boolean;
+  };
+
+  type MobilePostTOCWindow = Window & {
+    MobilePostTOC?: MobilePostTOCState;
+  };
+
+  const mobilePostTOCWindow = window as MobilePostTOCWindow;
+  mobilePostTOCWindow.MobilePostTOC ??= {
+    manager: null,
+    listenersBound: false,
+  };
+
+  function initMobilePostTOC() {
+    const state = mobilePostTOCWindow.MobilePostTOC;
+    if (!state) return;
+
+    state.manager?.cleanup();
+    state.manager = null;
+
+    const details = document.getElementById("mobile-post-toc") as HTMLDetailsElement | null;
+    const content = document.getElementById("mobile-post-toc-content");
+    const count = document.getElementById("mobile-post-toc-count");
+    if (!details || !content) return;
+
+    const manager = new TOCManager({
+      contentId: "mobile-post-toc-content",
+      indicatorId: "mobile-post-active-indicator",
+      maxLevel: 3,
+      scrollOffset: 84,
+    });
+
+    manager.attach();
+    state.manager = manager;
+
+    const itemCount = content.querySelectorAll<HTMLAnchorElement>("a[data-heading-id]").length;
+    details.hidden = itemCount === 0;
+    if (count) {
+      count.textContent = String(itemCount);
+      count.setAttribute("aria-label", `${itemCount} ${content.getAttribute("aria-label") ?? ""}`.trim());
+    }
+
+    details.ontoggle = () => {
+      if (details.open) manager.updateActiveState();
+    };
+  }
+
+  function scheduleMobilePostTOCInit(delay = 80) {
+    window.setTimeout(initMobilePostTOC, delay);
+  }
+
+  const state = mobilePostTOCWindow.MobilePostTOC;
+  if (state && !state.listenersBound) {
+    document.addEventListener("swup:contentReplaced", () => scheduleMobilePostTOCInit());
+    document.addEventListener("astro:page-load", () => scheduleMobilePostTOCInit());
+    document.addEventListener("password:decrypted", () => scheduleMobilePostTOCInit(160));
+    window.addEventListener("popstate", () => scheduleMobilePostTOCInit(120));
+    state.listenersBound = true;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => initMobilePostTOC(), { once: true });
+  } else {
+    initMobilePostTOC();
+  }
+</script>
+
+<style>
+  .mobile-post-toc {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .mobile-post-toc {
+      display: block;
+      margin: 0 0 1.75rem;
+      border: 1px solid color-mix(in oklab, var(--primary) 20%, var(--line-divider));
+      border-radius: var(--radius-large);
+      background: color-mix(in oklab, var(--card-bg) 78%, transparent);
+      overflow: clip;
+    }
+
+    .mobile-post-toc[hidden] {
+      display: none;
+    }
+
+    .mobile-post-toc-summary {
+      min-height: 3.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.7rem 0.85rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      transition:
+        background-color var(--duration-normal) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-standard);
+    }
+
+    .mobile-post-toc-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .mobile-post-toc-summary:hover {
+      background: var(--btn-plain-bg-hover);
+    }
+
+    .mobile-post-toc-summary:active {
+      transform: scale(0.99);
+    }
+
+    .mobile-post-toc-summary:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: -3px;
+    }
+
+    .mobile-post-toc-icon {
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: calc(var(--radius-large) - 0.375rem);
+      background: var(--btn-regular-bg);
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+
+    .mobile-post-toc-title {
+      flex: 1;
+      min-width: 0;
+      font-weight: 700;
+    }
+
+    .mobile-post-toc-count {
+      min-width: 1.55rem;
+      height: 1.55rem;
+      display: grid;
+      place-items: center;
+      border-radius: calc(var(--radius-large) - 0.375rem);
+      background: color-mix(in oklab, var(--primary) 14%, transparent);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    .mobile-post-toc-chevron {
+      flex: 0 0 auto;
+      font-size: 1.35rem;
+      transition: transform var(--duration-normal) var(--ease-standard);
+    }
+
+    .mobile-post-toc[open] .mobile-post-toc-chevron {
+      transform: rotate(180deg);
+    }
+
+    .mobile-post-toc-panel {
+      border-top: 1px solid var(--line-divider);
+      padding: 0.55rem;
+    }
+
+    .mobile-post-toc-panel .toc-scroll-container {
+      max-height: min(19rem, 48dvh);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-post-toc-summary,
+    .mobile-post-toc-chevron {
+      transition-duration: 1ms;
+    }
+
+    .mobile-post-toc-summary:active {
+      transform: none;
+    }
+  }
+</style>

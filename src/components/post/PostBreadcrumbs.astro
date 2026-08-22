@@ -1,0 +1,53 @@
+---
+import { Icon } from "astro-icon/components";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getCategoryUrl, url } from "@/utils/url-utils";
+
+interface Props {
+	title: string;
+	category?: string;
+	cover?: boolean;
+}
+
+const { title, category, cover = false } = Astro.props;
+const categoryLabel = category || i18n(I18nKey.uncategorized);
+---
+
+<nav
+  class:list={[
+    "article-breadcrumb",
+    { "article-cover-breadcrumb": cover },
+  ]}
+  aria-label="面包屑导航"
+>
+  <a href={url("/")} aria-label={i18n(I18nKey.home)}>
+    <Icon is:inline name="material-symbols:home-outline-rounded" aria-hidden="true" />
+    <span>{i18n(I18nKey.home)}</span>
+  </a>
+  <Icon
+    is:inline
+    name="material-symbols:chevron-right-rounded"
+    class="article-breadcrumb-separator"
+    aria-hidden="true"
+  />
+  <a href={getCategoryUrl(category || "")} title={categoryLabel}>
+    {categoryLabel}
+  </a>
+  <Icon
+    is:inline
+    name="material-symbols:chevron-right-rounded"
+    class="article-breadcrumb-separator"
+    aria-hidden="true"
+  />
+  <span aria-current="page" title={title}>{title}</span>
+</nav>
+
+<style>
+  .article-breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.28rem;
+  }
+</style>

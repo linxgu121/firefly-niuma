@@ -9,6 +9,8 @@ export const zh_CN: Translation = {
 	[Key.searchNoResults]: "找不到相关结果。",
 	[Key.searchTypeSomething]: "请输入搜索关键词。",
 	[Key.searchLoading]: "正在搜索...",
+	[Key.searchLoadError]: "搜索服务暂时无法加载，请稍后重试。",
+	[Key.retry]: "重试",
 	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "内容",
 	[Key.searchViewMore]: "查看更多结果 ({count} 个更多)",

@@ -6,26 +6,15 @@ import Icon from "@/components/common/Icon.svelte";
 import type { SearchResult } from "@/global";
 import { url as formatUrl } from "@/utils/url-utils";
 
-// --- Props ---
-export let title = i18n(I18nKey.search);
-export let description = "";
-
-// --- State ---
 let keyword = "";
 let results: SearchResult[] = [];
 let isSearching = false;
+let isInitializing = true;
 let initialized = false;
+let loadError = false;
+let initialKeywordApplied = false;
+let debounceTimer: ReturnType<typeof setTimeout>;
 
-// 在客户端获取 URL 参数
-const getInitialKeyword = (): string => {
-	if (typeof window !== "undefined") {
-		const searchParams = new URLSearchParams(window.location.search);
-		return searchParams.get("q") || "";
-	}
-	return "";
-};
-
-// --- Mocks for Dev Mode ---
 const fakeResult: SearchResult[] = [
 	{
 		url: formatUrl("/"),
@@ -39,154 +28,384 @@ const fakeResult: SearchResult[] = [
 	},
 ];
 
-// --- Core Search Logic ---
+const updateQueryString = () => {
+	if (typeof window === "undefined") return;
+	const currentUrl = new URL(window.location.href);
+	const trimmedKeyword = keyword.trim();
+	if (trimmedKeyword) {
+		currentUrl.searchParams.set("q", trimmedKeyword);
+	} else {
+		currentUrl.searchParams.delete("q");
+	}
+	window.history.replaceState(window.history.state, "", currentUrl);
+};
+
 const search = async () => {
-	if (!initialized || !keyword.trim()) {
+	const trimmedKeyword = keyword.trim();
+	if (!initialized || !trimmedKeyword) {
 		results = [];
+		isSearching = false;
 		return;
 	}
+
 	isSearching = true;
+	loadError = false;
 
 	try {
 		if (import.meta.env.PROD && window.pagefind) {
-			const response = await window.pagefind.search(keyword);
-			const rawResults = await Promise.all(
-				response.results.map((item) => item.data()),
-			);
-			results = rawResults;
+			const response = await window.pagefind.search(trimmedKeyword);
+			results = await Promise.all(response.results.map((item) => item.data()));
 		} else if (import.meta.env.DEV) {
-			// 开发模式下的模拟结果
 			results = fakeResult.filter(
 				(item) =>
-					item.excerpt.toLowerCase().includes(keyword.toLowerCase()) ||
-					item.meta.title.toLowerCase().includes(keyword.toLowerCase()),
+					item.excerpt.toLowerCase().includes(trimmedKeyword.toLowerCase()) ||
+					item.meta.title.toLowerCase().includes(trimmedKeyword.toLowerCase()),
 			);
 		}
 	} catch (error) {
 		console.error("Search error:", error);
 		results = [];
+		loadError = true;
 	} finally {
 		isSearching = false;
 	}
 };
 
-// --- Initialization onMount ---
-onMount(() => {
-	const initialize = async () => {
-		initialized = true;
+const initialize = async () => {
+	if (initialized) return;
+	initialized = true;
+	isInitializing = false;
+	loadError = false;
 
-		// 从 URL 获取初始关键词
-		const initialKeyword = getInitialKeyword();
-		if (initialKeyword) {
-			keyword = initialKeyword;
-		}
-
-		// 如果有关键词，自动执行搜索
-		if (keyword.trim()) {
-			await search();
-		}
-	};
-
-	// 开发环境直接初始化
-	if (import.meta.env.DEV) {
-		initialize();
-	} else {
-		// 生产环境等待 Pagefind 加载
-		window.__loadPagefind?.();
-		if (window.pagefind) {
-			initialize();
-		} else {
-			document.addEventListener("pagefindready", initialize, {
-				once: true,
-			});
-		}
+	if (!initialKeywordApplied && typeof window !== "undefined") {
+		keyword = new URLSearchParams(window.location.search).get("q") || "";
+		initialKeywordApplied = true;
 	}
-});
 
-let debounceTimer: NodeJS.Timeout;
+	if (keyword.trim()) await search();
+};
+
+const markLoadError = () => {
+	initialized = false;
+	isInitializing = false;
+	isSearching = false;
+	loadError = true;
+	results = [];
+};
+
+const preparePagefind = async () => {
+	isInitializing = true;
+	loadError = false;
+
+	if (import.meta.env.DEV || window.pagefind) {
+		await initialize();
+		return;
+	}
+
+	if (!window.__loadPagefind) {
+		markLoadError();
+		return;
+	}
+
+	await window.__loadPagefind();
+	if (window.pagefind && !window.__pagefindLoadError) {
+		await initialize();
+	} else {
+		markLoadError();
+	}
+};
+
+const retryLoad = () => {
+	if (window.pagefind) {
+		loadError = false;
+		void search();
+		return;
+	}
+	window.__pagefindLoading = undefined;
+	window.__pagefindLoadError = false;
+	void preparePagefind();
+};
+
 const handleInput = () => {
+	updateQueryString();
 	clearTimeout(debounceTimer);
 	debounceTimer = setTimeout(() => {
-		search();
-	}, 300);
+		void search();
+	}, 260);
 };
+
+onMount(() => {
+	const handleReady = () => {
+		void initialize();
+	};
+	const handleError = () => {
+		markLoadError();
+	};
+
+	document.addEventListener("pagefindready", handleReady);
+	document.addEventListener("pagefindloaderror", handleError);
+	void preparePagefind();
+
+	return () => {
+		clearTimeout(debounceTimer);
+		document.removeEventListener("pagefindready", handleReady);
+		document.removeEventListener("pagefindloaderror", handleError);
+	};
+});
 </script>
 
-<div class="card-base px-6 py-6 md:px-9 md:py-6 mb-4 rounded-(--radius-large)">
-    <!-- Title Section -->
-    <div class="mb-4">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="h-8 w-8 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70">
-                <Icon icon="material-symbols:search" class="text-[1.5rem]"></Icon>
-            </div>
-            <div class="text-3xl font-bold text-90">
-                {title}
-            </div>
-        </div>
-        {#if description}
-            <p class="text-base text-50 leading-relaxed">
-                {description}
-            </p>
-        {/if}
-    </div>
+<section id="advanced-search" class="utility-search-panel card-base onload-animation" aria-label={i18n(I18nKey.search)}>
+	<div class="utility-search-field">
+		<label class="sr-only" for="utility-search-input">{i18n(I18nKey.search)}</label>
+		<Icon icon="material-symbols:search" class="utility-search-icon" />
+		<input
+			id="utility-search-input"
+			type="search"
+			placeholder={i18n(I18nKey.search)}
+			autocomplete="off"
+			bind:value={keyword}
+			on:input={handleInput}
+		/>
+	</div>
 
-    <!-- Search Bar -->
-    <div class="relative flex">
-        <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Icon icon="material-symbols:search" class="text-2xl text-50" />
-            </div>
-            <input
-                type="text"
-                class="block w-full p-4 pl-10 text-sm bg-transparent border border-black/10 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-(--primary) focus:border-(--primary) hover:border-black/20 dark:hover:border-white/20 text-75 placeholder:opacity-50 transition-colors outline-hidden"
-                placeholder={i18n(I18nKey.search)}
-                bind:value={keyword}
-                on:input={handleInput}
-            >
-        </div>
-    </div>
-</div>
+	<div class="utility-search-status" aria-live="polite" aria-atomic="true">
+		{#if isInitializing || isSearching}
+			{i18n(I18nKey.searchLoading)}
+		{:else if keyword.trim() && results.length > 0}
+			{results.length} {i18n(results.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}
+		{/if}
+	</div>
 
-<div class="grid grid-cols-1 gap-4">
-    <!-- Results Area -->
-    <div>
-        {#if isSearching}
-            <div class="flex justify-center py-10">
-                <Icon icon="svg-spinners:ring-resize" class="text-4xl text-(--primary)" />
-            </div>
-        {:else if results.length > 0}
-            <div class="space-y-4">
-                {#each results as result}
-                    <div class="card-base p-6 block rounded-(--radius-large)">
-                        <a href={result.url} class="block group">
-                            <h5 class="mb-2 text-2xl font-bold tracking-tight text-90 group-hover:text-(--primary) transition-colors">
-                                {@html result.meta.title}
-                            </h5>
-                            <p class="font-normal text-75">
-                                {@html result.excerpt}
-                            </p>
-                        </a>
-                    </div>
-                {/each}
-            </div>
-        {:else if keyword}
-            <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
-                {i18n(I18nKey.searchNoResults)}
-            </div>
-        {:else}
-             <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
-                {i18n(I18nKey.searchTypeSomething)}
-            </div>
-        {/if}
-    </div>
-</div>
+	{#if isInitializing || isSearching}
+		<div class="utility-search-skeletons" aria-hidden="true">
+			<div class="utility-search-skeleton"><span></span><span></span></div>
+			<div class="utility-search-skeleton"><span></span><span></span></div>
+			<div class="utility-search-skeleton"><span></span><span></span></div>
+		</div>
+	{:else if loadError}
+		<div class="utility-search-empty" role="alert">
+			<Icon icon="material-symbols:error-outline" class="utility-search-state-icon" />
+			<p>{i18n(I18nKey.searchLoadError)}</p>
+			<button type="button" class="utility-action utility-action-secondary" on:click={retryLoad}>
+				<Icon icon="material-symbols:sync-rounded" />
+				<span>{i18n(I18nKey.retry)}</span>
+			</button>
+		</div>
+	{:else if results.length > 0}
+		<ol class="utility-search-results">
+			{#each results as result}
+				<li>
+					<a href={result.url} class="utility-search-result">
+						<h2>{@html result.meta.title}</h2>
+						<p>{@html result.excerpt}</p>
+						<Icon icon="material-symbols:chevron-right-rounded" class="utility-search-chevron" />
+					</a>
+				</li>
+			{/each}
+		</ol>
+	{:else}
+		<div class="utility-search-empty">
+			<Icon
+				icon={keyword.trim() ? "material-symbols:search-off" : "material-symbols:search"}
+				class="utility-search-state-icon"
+			/>
+			<p>{keyword.trim() ? i18n(I18nKey.searchNoResults) : i18n(I18nKey.searchTypeSomething)}</p>
+		</div>
+	{/if}
+</section>
 
 <style>
-    /* 关键字高亮效果 - 主题色 */
-    :global(mark) {
-        background: transparent;
-        color: var(--primary);
-        font-weight: 600;
-        padding: 0 0.1em;
-    }
+	.utility-search-panel {
+		min-height: 18rem;
+		padding: 1.5rem 1.75rem;
+	}
+
+	.utility-search-field {
+		position: relative;
+	}
+
+	.utility-search-icon {
+		position: absolute;
+		top: 50%;
+		left: 0.95rem;
+		color: var(--text-tertiary);
+		font-size: 1.35rem;
+		pointer-events: none;
+		transform: translateY(-50%);
+	}
+
+	.utility-search-field input {
+		width: 100%;
+		height: 3.15rem;
+		padding: 0 1rem 0 2.9rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 0.75rem;
+		background: color-mix(in oklab, var(--card-bg) 68%, transparent);
+		color: var(--text-primary);
+		font-size: 0.95rem;
+		outline: none;
+		transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+	}
+
+	.utility-search-field input:hover {
+		border-color: var(--border-strong);
+	}
+
+	.utility-search-field input:focus {
+		border-color: var(--primary);
+		background: var(--card-bg);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 24%, transparent);
+	}
+
+	.utility-search-status {
+		min-height: 2.35rem;
+		padding: 0.8rem 0.15rem 0.45rem;
+		color: var(--text-tertiary);
+		font-size: 0.78rem;
+	}
+
+	.utility-search-results {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.utility-search-results li + li {
+		border-top: 1px solid var(--line-divider);
+	}
+
+	.utility-search-result {
+		display: grid;
+		min-width: 0;
+		grid-template-columns: minmax(0, 1fr) 1.5rem;
+		gap: 0.35rem 1rem;
+		padding: 1.05rem 0.75rem;
+		border-radius: 0.75rem;
+		outline: none;
+		transition: background-color 180ms ease;
+	}
+
+	.utility-search-result:hover,
+	.utility-search-result:focus-visible {
+		background: color-mix(in oklab, var(--primary) 8%, transparent);
+	}
+
+	.utility-search-result:focus-visible {
+		box-shadow: inset 0 0 0 2px var(--primary);
+	}
+
+	.utility-search-result h2,
+	.utility-search-result p {
+		min-width: 0;
+	}
+
+	.utility-search-result h2 {
+		grid-column: 1;
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 1.05rem;
+		font-weight: 720;
+		line-height: 1.45;
+	}
+
+	.utility-search-result p {
+		grid-column: 1;
+		margin: 0;
+		color: var(--text-secondary);
+		font-size: 0.84rem;
+		line-height: 1.65;
+	}
+
+	.utility-search-chevron {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: center;
+		color: var(--text-tertiary);
+		font-size: 1.3rem;
+	}
+
+	.utility-search-empty {
+		display: flex;
+		min-height: 10rem;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		color: var(--text-secondary);
+		text-align: center;
+	}
+
+	.utility-search-empty p {
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	.utility-search-state-icon {
+		color: var(--primary);
+		font-size: 2.25rem;
+		opacity: 0.72;
+	}
+
+	.utility-search-skeletons {
+		display: grid;
+		gap: 0;
+	}
+
+	.utility-search-skeleton {
+		display: grid;
+		gap: 0.7rem;
+		padding: 1.05rem 0.75rem;
+		border-top: 1px solid var(--line-divider);
+	}
+
+	.utility-search-skeleton span {
+		display: block;
+		height: 0.75rem;
+		width: min(72%, 25rem);
+		border-radius: 0.4rem;
+		background: color-mix(in oklab, var(--text-tertiary) 18%, transparent);
+		animation: utility-search-pulse 1.2s ease-in-out infinite alternate;
+	}
+
+	.utility-search-skeleton span:first-child {
+		height: 0.95rem;
+		width: min(48%, 16rem);
+	}
+
+	:global(mark) {
+		padding: 0 0.1em;
+		background: transparent;
+		color: var(--primary);
+		font-weight: 650;
+	}
+
+	@keyframes utility-search-pulse {
+		from { opacity: 0.45; }
+		to { opacity: 0.9; }
+	}
+
+	@media (max-width: 639px) {
+		.utility-search-panel {
+			min-height: 16rem;
+			padding: 1rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.utility-search-field input,
+		.utility-search-result {
+			transition: none;
+		}
+
+		.utility-search-skeleton span {
+			animation: none;
+			opacity: 0.72;
+		}
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		.utility-search-field input {
+			background: var(--card-bg);
+		}
+	}
 </style>

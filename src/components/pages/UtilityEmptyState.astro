@@ -1,0 +1,35 @@
+---
+import { Icon } from "astro-icon/components";
+import "@/styles/utility-pages.css";
+
+interface Props {
+	message: string;
+	icon?: string;
+	actionHref?: string;
+	actionLabel?: string;
+	actionIcon?: string;
+	class?: string;
+}
+
+const {
+	message,
+	icon = "material-symbols:article-outline",
+	actionHref,
+	actionLabel,
+	actionIcon = "material-symbols:home-outline-rounded",
+	class: className = "",
+} = Astro.props;
+---
+
+<div class:list={["utility-empty-state", className]} role="status">
+	<Icon is:inline name={icon} class="utility-empty-icon" />
+	<p>{message}</p>
+	{
+		actionHref && actionLabel && (
+			<a class="utility-action utility-action-secondary" href={actionHref}>
+				<Icon is:inline name={actionIcon} />
+				<span>{actionLabel}</span>
+			</a>
+		)
+	}
+</div>

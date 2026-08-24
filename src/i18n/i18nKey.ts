@@ -6,6 +6,8 @@ enum I18nKey {
 	searchNoResults = "searchNoResults",
 	searchTypeSomething = "searchTypeSomething",
 	searchLoading = "searchLoading",
+	searchLoadError = "searchLoadError",
+	retry = "retry",
 	searchSummary = "searchSummary",
 	searchContent = "searchContent",
 	searchViewMore = "searchViewMore",

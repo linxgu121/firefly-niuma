@@ -9,6 +9,8 @@ export const ko: Translation = {
 	[Key.searchNoResults]: "검색 결과가 없습니다.",
 	[Key.searchTypeSomething]: "검색어를 입력하세요...",
 	[Key.searchLoading]: "검색 중...",
+	[Key.searchLoadError]: "검색을 불러오지 못했습니다. 다시 시도해 주세요.",
+	[Key.retry]: "다시 시도",
 	[Key.searchSummary]: "요약",
 	[Key.searchContent]: "내용",
 	[Key.searchViewMore]: "더 많은 결과 보기 ({count}개 더)",

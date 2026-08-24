@@ -1,4 +1,6 @@
 ---
+import UtilityEmptyState from "@components/pages/UtilityEmptyState.astro";
+import { Icon } from "astro-icon/components";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -35,10 +37,6 @@ function formatDate(date: Date) {
 	return `${month}-${day}`;
 }
 
-function formatTag(tagList: string[]) {
-	return tagList.map((t) => `#${t}`).join(" ");
-}
-
 // 传给客户端脚本的 i18n 文案与配置
 const i18nStrings = {
 	categories: i18n(I18nKey.categories),
@@ -53,114 +51,306 @@ const foldOnFilter = collapseAllButFirst;
 ---
 
 <archive-panel
-  class="card-base px-8 py-6"
-  data-fold={foldOnFilter ? "true" : "false"}
+	class="archive-panel card-base onload-animation"
+	data-fold={foldOnFilter ? "true" : "false"}
 >
-  {/* 筛选头部：默认隐藏，客户端在有筛选时填充并显示 */}
-  <div id="archive-filter-header" class="mb-5 hidden">
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-      <div class="min-w-0 text-sm text-75">
-        <a id="archive-filter-link" href={tagsBaseUrl} class="text-50 hover:text-(--primary) transition-colors"></a>
-        <span class="mx-2 text-30">/</span>
-        <span id="archive-filter-values" class="font-semibold text-(--primary)"></span>
-        <span id="archive-filter-secondary" class="ml-2 text-50 hidden"></span>
-      </div>
-      <div class="shrink-0 text-xs text-50">
-        <span id="archive-filter-count"></span> <span id="archive-filter-count-label"></span>
-      </div>
-    </div>
-  </div>
+	<div id="archive-filter-header" class="archive-filter-header" hidden>
+		<div class="archive-filter-copy">
+			<a id="archive-filter-link" href={tagsBaseUrl}></a>
+			<span aria-hidden="true">/</span>
+			<strong id="archive-filter-values"></strong>
+			<span id="archive-filter-secondary" hidden></span>
+		</div>
+		<div class="archive-filter-count">
+			<span id="archive-filter-count"></span>
+			<span id="archive-filter-count-label"></span>
+		</div>
+	</div>
 
-  {groups.map((group, groupIndex) => {
-    const collapsed = collapseAllButFirst && groupIndex > 0;
-    return (
-      <div class="archive-year-block" data-year={group.year} data-count={group.posts.length}>
-        <button
-          class="archive-year-toggle flex flex-row w-full items-center h-15 cursor-pointer rounded-lg
-                 hover:bg-(--btn-plain-bg-hover) transition-colors group/yr"
-          aria-expanded={collapsed ? "false" : "true"}
-        >
-          <div class="w-[15%] md:w-[10%] transition text-2xl font-bold text-right text-75
-                      group-hover/yr:text-(--primary)">
-            {group.year}
-          </div>
-          <div class="w-[15%] md:w-[10%]">
-            <div class="h-3 w-3 bg-none rounded-full outline-(--primary) mx-auto
-                        -outline-offset-2 z-50 outline-3"></div>
-          </div>
-          <div class="w-[70%] md:w-[80%] transition text-left text-50 flex items-center gap-2
-                      group-hover/yr:text-(--primary)">
-            <span class="archive-year-count">{group.posts.length}</span>
-            {" "}
-            <span class="archive-year-count-label">{i18n(group.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
-            <span class="archive-arrow" style={collapsed ? "transform: rotate(-90deg)" : ""}>
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-          </div>
-        </button>
+	<div id="archive-filter-empty" hidden>
+		<UtilityEmptyState message={i18n(I18nKey.noData)} icon="material-symbols:search-off" />
+	</div>
 
-        <div class="archive-year-content" hidden={collapsed}>
-          {group.posts.map((post) => (
-            <a
-              href={getPostUrlBySlug(post.id)}
-              aria-label={post.data.title}
-              class="archive-post group btn-plain block! h-10 w-full rounded-lg hover:text-[initial]"
-              data-tags={JSON.stringify(post.data.tags || [])}
-              data-category={post.data.category || ""}
-            >
-              <div class="flex flex-row justify-start items-center h-full">
-                {/* date */}
-                <div class="w-[15%] md:w-[10%] transition text-sm text-right text-50">
-                  {formatDate(post.data.published)}
-                </div>
+	{
+		groups.length === 0 ? (
+			<UtilityEmptyState message={i18n(I18nKey.noData)} />
+		) : groups.map((group, groupIndex) => {
+			const collapsed = collapseAllButFirst && groupIndex > 0;
+			const contentId = `archive-year-${group.year}`;
+			return (
+				<section class="archive-year-block" data-year={group.year} data-count={group.posts.length}>
+					<button
+						type="button"
+						class="archive-year-toggle"
+						aria-expanded={collapsed ? "false" : "true"}
+						aria-controls={contentId}
+					>
+						<span class="archive-year">{group.year}</span>
+						<span class="archive-year-marker" aria-hidden="true"></span>
+						<span class="archive-year-summary">
+							<span class="archive-year-count">{group.posts.length}</span>
+							<span class="archive-year-count-label">{i18n(group.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
+						</span>
+						<Icon
+							is:inline
+							name="material-symbols:keyboard-arrow-down-rounded"
+							class="archive-arrow"
+							style={collapsed ? "transform: rotate(-90deg)" : ""}
+						/>
+					</button>
 
-                {/* dot and line */}
-                <div class="w-[15%] md:w-[10%] relative dash-line h-full flex items-center">
-                  <div class="transition-all mx-auto w-1 h-1 rounded-sm group-hover:h-5
-                              bg-[oklch(0.5_0.05_var(--hue))] group-hover:bg-(--primary)
-                              outline-4 z-50 outline-(--card-bg)
-                              group-hover:outline-(--btn-plain-bg-hover)
-                              group-active:outline-(--btn-plain-bg-active)"></div>
-                </div>
-
-                {/* post title */}
-                <div class="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold
-                            group-hover:translate-x-1 transition-all group-hover:text-(--primary)
-                            text-75 pr-8 whitespace-nowrap text-ellipsis overflow-hidden flex items-center gap-2">
-                  {post.data.category && (
-                    <span class="shrink-0 inline-block text-xs font-medium px-1.5 py-0.5 rounded-sm
-                                 bg-[oklch(0.95_0.025_var(--hue))] dark:bg-[oklch(0.25_0.025_var(--hue))]
-                                 text-(--primary) group-hover:bg-(--primary) group-hover:text-white!
-                                 transition-colors">
-                      {post.data.category}
-                    </span>
-                  )}
-                  <span class="truncate">{post.data.title}</span>
-                </div>
-
-                {/* tag list */}
-                <div class="hidden md:block md:w-[15%] text-left text-sm transition
-                            whitespace-nowrap text-ellipsis overflow-hidden text-30">
-                  {formatTag(post.data.tags || [])}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    );
-  })}
+					<div id={contentId} class="archive-year-content" hidden={collapsed}>
+						{group.posts.map((post) => (
+							<a
+								href={getPostUrlBySlug(post.id)}
+								aria-label={post.data.title}
+								class="archive-post"
+								data-tags={JSON.stringify(post.data.tags || [])}
+								data-category={post.data.category || ""}
+							>
+								<time datetime={post.data.published.toISOString().slice(0, 10)}>{formatDate(post.data.published)}</time>
+								<span class="archive-post-marker" aria-hidden="true"></span>
+								<span class="archive-post-copy">
+									<span class="archive-post-title">{post.data.title}</span>
+									{(post.data.category || post.data.tags.length > 0) && (
+										<span class="archive-post-meta">
+											{post.data.category && <span>{post.data.category}</span>}
+											{post.data.category && post.data.tags.length > 0 && <span aria-hidden="true">/</span>}
+											{post.data.tags.length > 0 && <span>{post.data.tags.map((tag) => `#${tag}`).join(" ")}</span>}
+										</span>
+									)}
+								</span>
+								<Icon is:inline name="material-symbols:chevron-right-rounded" class="archive-post-chevron" />
+							</a>
+						))}
+					</div>
+				</section>
+			);
+		})
+	}
 </archive-panel>
 
 <style>
-  archive-panel {
-    display: block;
-  }
-  .archive-arrow {
-    display: inline-flex;
-  }
+	archive-panel {
+		display: block;
+		min-width: 0;
+		padding: 1.25rem 1.5rem 1.5rem;
+	}
+
+	[hidden] {
+		display: none !important;
+	}
+
+	.archive-filter-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1rem;
+		padding: 0.75rem 0.9rem;
+		border: 1px solid color-mix(in oklab, var(--primary) 18%, var(--line-divider));
+		border-radius: 0.75rem;
+		background: color-mix(in oklab, var(--primary) 6%, transparent);
+		color: var(--text-secondary);
+		font-size: 0.82rem;
+	}
+
+	.archive-filter-copy {
+		display: flex;
+		min-width: 0;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.archive-filter-copy a:hover,
+	.archive-filter-copy a:focus-visible,
+	.archive-filter-copy strong {
+		color: var(--primary);
+	}
+
+	.archive-filter-count {
+		display: flex;
+		flex: 0 0 auto;
+		gap: 0.3rem;
+		color: var(--text-tertiary);
+	}
+
+	.archive-year-block + .archive-year-block {
+		margin-top: 0.3rem;
+	}
+
+	.archive-year-toggle,
+	.archive-post {
+		display: grid;
+		width: 100%;
+		min-width: 0;
+		grid-template-columns: 4.4rem 1.35rem minmax(0, 1fr) 1.5rem;
+		align-items: center;
+		gap: 0.6rem;
+		border-radius: 0.75rem;
+		outline: none;
+	}
+
+	.archive-year-toggle {
+		min-height: 3.6rem;
+		padding: 0.4rem 0.65rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		text-align: left;
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.archive-year-toggle:hover,
+	.archive-year-toggle:focus-visible {
+		background: color-mix(in oklab, var(--primary) 8%, transparent);
+		color: var(--primary);
+	}
+
+	.archive-year-toggle:focus-visible,
+	.archive-post:focus-visible {
+		box-shadow: inset 0 0 0 2px var(--primary);
+	}
+
+	.archive-year {
+		color: var(--text-primary);
+		font-size: 1.45rem;
+		font-weight: 780;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.035em;
+		text-align: right;
+	}
+
+	.archive-year-marker {
+		height: 0.7rem;
+		width: 0.7rem;
+		justify-self: center;
+		border: 2px solid var(--primary);
+		border-radius: 999px;
+		background: var(--card-bg);
+	}
+
+	.archive-year-summary {
+		display: flex;
+		gap: 0.35rem;
+		font-size: 0.84rem;
+	}
+
+	.archive-arrow {
+		justify-self: center;
+		font-size: 1.35rem;
+	}
+
+	.archive-year-content {
+		overflow: clip;
+	}
+
+	.archive-post {
+		min-height: 3.65rem;
+		padding: 0.4rem 0.65rem;
+		color: var(--text-secondary);
+		transition: background-color 180ms ease, color 180ms ease;
+	}
+
+	.archive-post:hover,
+	.archive-post:focus-visible {
+		background: color-mix(in oklab, var(--primary) 7%, transparent);
+		color: var(--primary);
+	}
+
+	.archive-post time {
+		color: var(--text-tertiary);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+
+	.archive-post-marker {
+		position: relative;
+		height: 0.38rem;
+		width: 0.38rem;
+		justify-self: center;
+		border-radius: 999px;
+		background: color-mix(in oklab, var(--primary) 55%, var(--text-tertiary));
+	}
+
+	.archive-post-marker::before {
+		position: absolute;
+		top: -2rem;
+		left: 50%;
+		height: 4rem;
+		width: 1px;
+		background: color-mix(in oklab, var(--primary) 24%, var(--line-divider));
+		content: "";
+		transform: translateX(-50%);
+		z-index: -1;
+	}
+
+	.archive-post-copy {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 0.18rem;
+	}
+
+	.archive-post-title {
+		overflow: hidden;
+		color: var(--text-primary);
+		font-size: 0.94rem;
+		font-weight: 700;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.archive-post-meta {
+		display: flex;
+		overflow: hidden;
+		gap: 0.45rem;
+		color: var(--text-tertiary);
+		font-size: 0.72rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.archive-post-chevron {
+		justify-self: center;
+		color: var(--text-tertiary);
+		font-size: 1.2rem;
+	}
+
+	@media (max-width: 639px) {
+		archive-panel {
+			padding: 1rem 0.75rem 1.25rem;
+		}
+
+		.archive-filter-header {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 0.4rem;
+		}
+
+		.archive-year-toggle,
+		.archive-post {
+			grid-template-columns: 3.65rem 1.1rem minmax(0, 1fr) 1.25rem;
+			gap: 0.4rem;
+			padding-inline: 0.35rem;
+		}
+
+		.archive-year {
+			font-size: 1.2rem;
+		}
+
+		.archive-post-meta {
+			max-width: 100%;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-year-toggle,
+		.archive-post {
+			transition: none;
+		}
+	}
 </style>
 
 <script is:inline define:vars={{ i18nStrings, tagsBaseUrl, categoriesBaseUrl }}>
@@ -249,6 +439,9 @@ const foldOnFilter = collapseAllButFirst;
 
       // 填充并显示筛选头部
       this.renderFilterHeader(tags, categories, uncategorized, totalVisible);
+
+	  const emptyState = this.querySelector("#archive-filter-empty");
+	  if (emptyState) emptyState.hidden = totalVisible !== 0;
     }
 
     setBlockCollapsed(block, collapsed) {
@@ -302,9 +495,9 @@ const foldOnFilter = collapseAllButFirst;
             .map((f) => `${f.label}: ${fmtValues(f)}`)
             .join("  ·  ");
           secondaryEl.textContent = `· ${summary}`;
-          secondaryEl.classList.remove("hidden");
+          secondaryEl.hidden = false;
         } else {
-          secondaryEl.classList.add("hidden");
+          secondaryEl.hidden = true;
         }
       }
       if (countEl) countEl.textContent = String(count);
@@ -313,7 +506,7 @@ const foldOnFilter = collapseAllButFirst;
           count === 1 ? i18nStrings.postCount : i18nStrings.postsCount;
       }
 
-      header.classList.remove("hidden");
+      header.hidden = false;
     }
 
     updateBannerTitle(tags, categories, uncategorized) {
@@ -350,13 +543,18 @@ const foldOnFilter = collapseAllButFirst;
           // 用 Web Animations API 做旋转动画，绕开 Swup 对 CSS transition 的干扰
           if (arrow) {
             requestAnimationFrame(() => {
-              arrow.animate(
+              const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              const targetTransform = willCollapse ? "rotate(-90deg)" : "rotate(0deg)";
+              const animation = arrow.animate(
                 [
                   { transform: willCollapse ? "rotate(0deg)" : "rotate(-90deg)" },
-                  { transform: willCollapse ? "rotate(-90deg)" : "rotate(0deg)" },
+                  { transform: targetTransform },
                 ],
-                { duration: 200, easing: "ease", fill: "forwards" },
+                { duration: reduceMotion ? 1 : 180, easing: "ease-out" },
               );
+              animation.addEventListener("finish", () => {
+                arrow.style.transform = targetTransform;
+              }, { once: true });
             });
           }
         });

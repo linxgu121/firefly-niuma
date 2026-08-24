@@ -1,17 +1,37 @@
 ---
 import ArchivePanel from "@components/controls/ArchivePanel.astro";
 import CategoryBar from "@components/layout/CategoryBar.astro";
-import { siteConfig } from "@/config";
+import UtilityPageHeader from "@components/pages/UtilityPageHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+import { getSortedPostsList } from "@/utils/content-utils";
+
+const posts = await getSortedPostsList();
+const yearCount = new Set(
+	posts.map((post) => post.data.published.getFullYear()),
+).size;
+const title = i18n(I18nKey.archive);
+const description = i18n(I18nKey.postList);
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)}>
-  {siteConfig.categoryBar && (
-    <div id="category-bar-wrapper" class="mb-4 onload-animation">
-      <CategoryBar />
-    </div>
-  )}
-  <ArchivePanel />
+<MainGridLayout title={title} description={description} hasVisibleH1>
+	<div class="utility-page">
+		<UtilityPageHeader
+			title={title}
+			description={description}
+			icon="material-symbols:archive"
+			stats={[
+				{ label: i18n(I18nKey.postsCount), value: posts.length },
+				{ label: i18n(I18nKey.year), value: yearCount },
+			]}
+		/>
+		{siteConfig.categoryBar && (
+			<div id="category-bar-wrapper" class="onload-animation">
+				<CategoryBar />
+			</div>
+		)}
+		<ArchivePanel />
+	</div>
 </MainGridLayout>

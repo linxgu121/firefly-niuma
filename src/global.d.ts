@@ -14,7 +14,7 @@ declare global {
 		floatingTOCListenersInitialized?: boolean;
 		// biome-ignore lint/suspicious/noExplicitAny: External library
 		spinePlayerInstance?: any;
-		pagefind: {
+		pagefind?: {
 			search: (query: string) => Promise<{
 				results: Array<{
 					data: () => Promise<SearchResult>;
@@ -24,6 +24,7 @@ declare global {
 		/** 按需加载 pagefind.js，由 Navbar.astro 的内联脚本挂载；幂等 */
 		__loadPagefind?: () => Promise<void>;
 		__pagefindLoading?: Promise<void>;
+		__pagefindLoadError?: boolean;
 		__fireflyMusic?: {
 			init: () => Promise<void>;
 			getState: () => {

@@ -1,0 +1,43 @@
+---
+import { Icon } from "astro-icon/components";
+import "@/styles/utility-pages.css";
+
+interface StatItem {
+	label: string;
+	value: string | number;
+}
+
+interface Props {
+	title: string;
+	description?: string;
+	icon: string;
+	stats?: StatItem[];
+}
+
+const { title, description, icon, stats = [] } = Astro.props;
+---
+
+<header class="utility-page-header card-base onload-animation">
+	<div class="utility-page-heading">
+		<span class="utility-page-icon" aria-hidden="true">
+			<Icon is:inline name={icon} />
+		</span>
+		<div class="min-w-0">
+			<h1>{title}</h1>
+			{description && <p>{description}</p>}
+		</div>
+	</div>
+
+	{
+		stats.length > 0 && (
+			<dl class="utility-page-stats" aria-label={title}>
+				{stats.map((stat) => (
+					<div class="utility-page-stat">
+						<dt>{stat.label}</dt>
+						<dd>{stat.value}</dd>
+					</div>
+				))}
+			</dl>
+		)
+	}
+</header>

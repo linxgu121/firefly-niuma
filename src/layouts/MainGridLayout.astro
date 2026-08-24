@@ -60,6 +60,7 @@ interface Props {
 		words?: number;
 		minutes?: number;
 	};
+	hasVisibleH1?: boolean;
 }
 
 const backgroundImages = getBackgroundImages();
@@ -75,6 +76,7 @@ const {
 	headings = [],
 	encrypted = false,
 	bannerPostMeta,
+	hasVisibleH1 = false,
 } = Astro.props;
 
 // 检查背景壁纸模式和是否允许切换
@@ -114,7 +116,6 @@ const shouldRenderGradient =
 
 // 检查是否为首页
 const isHomePageCheck = isHomePage(Astro.url.pathname);
-
 
 // 检查是否在文章详情页
 const isPostPage = !!postSlug;
@@ -189,7 +190,9 @@ const mainPanelTop =
 // 当banner模式被禁用时，主内容区域应该始终从顶栏下面开始
 // 非首页在小于1024px时会通过 mobile-main-no-banner CSS类覆盖为导航下方的统一偏移
 const finalMainPanelTop =
-	isBannerMode && isBackgroundEnabled ? mainPanelTop : "var(--shell-top-offset)";
+	isBannerMode && isBackgroundEnabled
+		? mainPanelTop
+		: "var(--shell-top-offset)";
 
 // 获取响应式侧边栏配置
 const sidebarConfig = getResponsiveSidebarConfig();
@@ -1128,8 +1131,8 @@ const hasMultipleImages =
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
-                {/* 文章页在正文头部提供可见 h1；其他页面继续使用隐藏标题兜底。 */}
-                {!setOGTypeArticle && <h1 class="sr-only">{title}</h1>}
+                {/* 文章页和显式声明的辅助页会自行提供可见 h1；其他页面使用隐藏标题兜底。 */}
+                {!setOGTypeArticle && !hasVisibleH1 && <h1 class="sr-only">{title}</h1>}
                 <div id="content-wrapper" class="onload-animation transition-leaving">
                     <slot></slot>
                 </div>

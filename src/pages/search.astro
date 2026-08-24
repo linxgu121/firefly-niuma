@@ -1,42 +1,31 @@
 ---
 import AdvancedSearch from "@components/pages/AdvancedSearch.svelte";
+import UtilityEmptyState from "@components/pages/UtilityEmptyState.astro";
+import UtilityPageHeader from "@components/pages/UtilityPageHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { url } from "@/utils/url-utils";
 
 const title = i18n(I18nKey.search);
-const description = "";
+const description = i18n(I18nKey.searchTypeSomething);
 ---
 
-<MainGridLayout title={title} description={description}>
-    <div class="min-h-[80vh]">
-        <AdvancedSearch client:load title={title} description={description} />
-    </div>
+<MainGridLayout title={title} description={description} hasVisibleH1>
+	<div class="utility-page">
+		<UtilityPageHeader
+			title={title}
+			description={description}
+			icon="material-symbols:search"
+		/>
+		<AdvancedSearch client:load />
+		<noscript>
+			<style>#advanced-search { display: none !important; }</style>
+			<section class="utility-panel card-base">
+				<UtilityEmptyState
+					message={i18n(I18nKey.searchLoadError)}
+					icon="material-symbols:error-outline"
+				/>
+			</section>
+		</noscript>
+	</div>
 </MainGridLayout>
-
-{import.meta.env.PROD && (
-<script is:inline define:vars={{ scriptUrl: url('/pagefind/pagefind.js') }}>
-    if (!window.pagefind) {
-        async function loadPagefind() {
-            const url = scriptUrl.replace(/\/$/, "")
-            try {
-                const response = await fetch(url, { method: 'HEAD' });
-                if (response.status !== 200) {
-                    return;
-                }
-                const pagefind = await import(scriptUrl);
-                await pagefind.options({
-                    "excerptLength": 20
-                });
-                window.pagefind = pagefind;
-                window.dispatchEvent(new Event('pagefindready'));
-            } catch (error) {
-                console.warn("Pagefind script not found or failed to load.");
-                window.dispatchEvent(new Event('pagefindloaderror'));
-            }
-        }
-        loadPagefind();
-    }
-</script>
-)}

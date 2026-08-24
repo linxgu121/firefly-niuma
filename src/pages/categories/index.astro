@@ -1,4 +1,6 @@
 ---
+import UtilityEmptyState from "@components/pages/UtilityEmptyState.astro";
+import UtilityPageHeader from "@components/pages/UtilityPageHeader.astro";
 import { Icon } from "astro-icon/components";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -7,63 +9,44 @@ import { getCategoryList } from "@/utils/content-utils";
 
 const categories = await getCategoryList();
 const totalPosts = categories.reduce((sum, cat) => sum + cat.count, 0);
+const title = i18n(I18nKey.categories);
+const description = i18n(I18nKey.allCategories);
 ---
 
-<MainGridLayout title={i18n(I18nKey.categories)}>
-    <!-- 页面标题 -->
-    <div class="card-base px-8 py-6 mb-4">
-        <div class="text-2xl font-bold text-(--primary) mb-2">
-            {i18n(I18nKey.categories)}
-        </div>
-        <p class="text-30 text-sm">
-            {i18n(I18nKey.allCategories)} · {totalPosts} {i18n(I18nKey.postsCount)}
-        </p>
-    </div>
+<MainGridLayout title={title} description={description} hasVisibleH1>
+	<div class="utility-page">
+		<UtilityPageHeader
+			title={title}
+			description={description}
+			icon="material-symbols:folder-open"
+			stats={[
+				{ label: i18n(I18nKey.categories), value: categories.length },
+				{ label: i18n(I18nKey.postsCount), value: totalPosts },
+			]}
+		/>
 
-    <!-- 分类卡片列表 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {
-            categories.map((category, index) => (
-                <a
-                    href={category.url}
-                    class="card-base p-6 flex items-center gap-4 group onload-animation"
-                    style={`animation-delay: calc(var(--content-delay) + ${index * 50}ms);`}
-                >
-                    <div class="shrink-0 w-14 h-14 rounded-full bg-(--primary)/10 group-hover:bg-(--primary)/20 flex items-center justify-center transition-colors">
-                        <Icon is:inline
-                            name="material-symbols:folder-open"
-                            class="text-3xl text-(--primary)"
-                        />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h2 class="text-lg font-bold text-90 truncate group-hover:text-(--primary) transition-colors" title={category.name}>
-                            {category.name}
-                        </h2>
-                        <p class="text-sm text-30 mt-1 group-hover:text-(--primary)/60 transition-colors">
-                            {category.count} {i18n(I18nKey.postsCount)}
-                        </p>
-                    </div>
-                    <div class="shrink-0">
-                        <Icon is:inline
-                            name="material-symbols:chevron-right-rounded"
-                            class="text-2xl text-30 group-hover:text-(--primary) transition-colors "
-                        />
-                    </div>
-                </a>
-            ))
-        }
-    </div>
-
-    <!-- 空状态 -->
-    {
-        categories.length === 0 && (
-            <div class="card-base px-8 py-12 text-center">
-                <Icon is:inline
-                    name="material-symbols:folder-off"
-                    class="text-5xl text-30 mx-auto mb-4"
-                />
-                <p class="text-30">{i18n(I18nKey.noData)}</p>
-            </div>
-        )
-    }
+		<section class="utility-panel card-base onload-animation" aria-label={description}>
+			{
+				categories.length > 0 ? (
+					<div class="utility-link-list">
+						{categories.map((category) => (
+							<a href={category.url} class="utility-link-row">
+								<span class="utility-link-icon" aria-hidden="true">
+									<Icon is:inline name="material-symbols:folder-open" />
+								</span>
+								<span class="utility-link-copy">
+									<span class="utility-link-title" title={category.name}>{category.name}</span>
+									<span class="utility-link-meta">{category.count} {i18n(category.count === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
+								</span>
+								<span class="utility-link-count">{category.count} {i18n(category.count === 1 ? I18nKey.postCount : I18nKey.postsCount)}</span>
+								<Icon is:inline name="material-symbols:chevron-right-rounded" class="utility-link-chevron" />
+							</a>
+						))}
+					</div>
+				) : (
+					<UtilityEmptyState message={i18n(I18nKey.noData)} icon="material-symbols:folder-off" />
+				)
+			}
+		</section>
+	</div>
 </MainGridLayout>

@@ -9,6 +9,8 @@ export const ru: Translation = {
 	[Key.searchNoResults]: "Результаты не найдены.",
 	[Key.searchTypeSomething]: "Введите ключевое слово для поиска...",
 	[Key.searchLoading]: "Поиск...",
+	[Key.searchLoadError]: "Не удалось загрузить поиск. Попробуйте ещё раз.",
+	[Key.retry]: "Повторить",
 	[Key.searchSummary]: "Резюме",
 	[Key.searchContent]: "Содержание",
 	[Key.searchViewMore]: "Показать еще ({count} шт)",

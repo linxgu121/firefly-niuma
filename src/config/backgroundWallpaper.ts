@@ -37,14 +37,14 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	 */
 	src: {
 		// 桌面背景图片（支持单张或多张随机）
-		desktop: "assets/images/DesktopWallpaper/xy.jpg",
+		desktop: "assets/images/DesktopWallpaper/xyHD.png",
 		// 移动背景图片（支持单张或多张随机）
-		mobile: "assets/images/DesktopWallpaper/xy.jpg",
+		mobile: "assets/images/DesktopWallpaper/xyHD.png",
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
 		// playerUrl: "/assets/videos/firefly.mp4",
-		playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4",
+		playerUrl: "",
 	},
 	// 从实际显示的 cover 裁剪区域取色；失败时稳定回退到站点原有的 165 色相
 	adaptivePalette: {

@@ -7,7 +7,7 @@ import { url } from "@/utils/url-utils";
 interface Props {
 	class?: string;
 	style?: string;
-	/** hero：首页主内容区（居中圆形头像 + 社交图标）；mini：侧边栏紧凑个人卡 */
+	/** hero：首页主内容区（居中圆形头像 + 社交图标）；mini：侧边栏文字个人卡 */
 	variant?: "hero" | "mini";
 }
 
@@ -46,18 +46,6 @@ const isHero = variant === "hero";
         sizes="350px"
       />
     </a>
-  )}
-
-  {!isHero && (
-    <div class="profile-mini-avatar relative mx-auto mb-3 block h-18 w-18 overflow-hidden rounded-full" aria-hidden="true">
-      <ImageWrapper
-        src={profileConfig.avatar || ""}
-        alt={`${profileConfig.name} 的头像`}
-        class="h-full w-full object-cover"
-        widths={[144]}
-        sizes="72px"
-      />
-    </div>
   )}
 
   <div class:list={["profile-copy", isHero && "px-2"]}>
@@ -124,7 +112,7 @@ const isHero = variant === "hero";
   .profile-mini {
     position: relative;
     overflow: hidden;
-    padding: 1.15rem 1rem 1rem;
+    padding: 1.35rem 1rem 1.1rem;
   }
 
   .profile-mini::before {
@@ -134,17 +122,6 @@ const isHero = variant === "hero";
     height: 4.25rem;
     pointer-events: none;
     background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 24%, transparent), transparent 72%);
-  }
-
-  .profile-mini-avatar {
-    border: 2px solid color-mix(in oklab, white 74%, var(--primary));
-    box-shadow: 0 6px 20px color-mix(in oklab, var(--primary) 26%, transparent);
-  }
-
-  .profile-mini-avatar :global(div),
-  .profile-mini-avatar :global(picture),
-  .profile-mini-avatar :global(img) {
-    border-radius: inherit;
   }
 
   .profile-mini .profile-name {

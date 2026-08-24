@@ -310,6 +310,10 @@ const minutes = remarkPluginFrontmatter.minutes;
     pointer-events: none;
   }
 
+  :global(html[data-card-sheen="false"]) .post-card-wrapper::after {
+    display: none;
+  }
+
   .description-clamped {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -507,7 +511,7 @@ const minutes = remarkPluginFrontmatter.minutes;
       box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 14%, transparent);
     }
 
-    .post-card-wrapper:hover::after {
+    :global(html[data-card-sheen="true"]) .post-card-wrapper:hover::after {
       opacity: 1;
       transform: rotate(16deg) translateX(620%);
     }

@@ -16,18 +16,20 @@ import { Icon } from "astro-icon/components";
     if (window.__scrollDownIndicatorInit) return;
     window.__scrollDownIndicatorInit = true;
 
-    function updateVisibility() {
-      var indicator = document.getElementById("scroll-down-indicator");
-      if (!indicator) return;
-      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      if (scrollTop > 100) {
-        indicator.classList.add("hide");
-      } else {
-        indicator.classList.remove("hide");
-      }
+    var sentinel = document.getElementById("scroll-visibility-sentinel");
+    if (!sentinel) {
+      sentinel = document.createElement("span");
+      sentinel.id = "scroll-visibility-sentinel";
+      sentinel.setAttribute("aria-hidden", "true");
+      sentinel.style.cssText = "position:absolute;top:100px;left:0;width:1px;height:1px;pointer-events:none;";
+      document.body.prepend(sentinel);
     }
 
-    window.addEventListener("scroll", updateVisibility, { passive: true });
-    updateVisibility();
+    var observer = new IntersectionObserver(function (entries) {
+      var indicator = document.getElementById("scroll-down-indicator");
+      if (!indicator) return;
+      indicator.classList.toggle("hide", !entries[0].isIntersecting);
+    });
+    observer.observe(sentinel);
   })();
 </script>

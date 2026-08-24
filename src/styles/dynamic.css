@@ -691,7 +691,7 @@ dynamic-feed {
 
 @media (prefers-reduced-motion: reduce) {
 	.dynamic-loading-spinner {
-		animation-duration: 1.5s;
+		animation: none;
 	}
 }
 

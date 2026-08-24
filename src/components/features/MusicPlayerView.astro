@@ -68,16 +68,29 @@ const viewConfigStr = JSON.stringify({
         function go() {
             if (fired) return;
             fired = true;
-            document.removeEventListener('pointerdown', go, true);
-            document.removeEventListener('keydown', go, true);
+            document.removeEventListener('pointerover', onIntent, true);
+            document.removeEventListener('focusin', onIntent, true);
+            document.removeEventListener('touchstart', onIntent, true);
+            document.querySelectorAll('.music-loading').forEach(function (loader) {
+                loader.classList.remove('opacity-0', 'pointer-events-none');
+            });
             mgr.init();
         }
-        document.addEventListener('pointerdown', go, true);
-        document.addEventListener('keydown', go, true);
+
+        function onIntent(event) {
+            if (event.target && event.target.closest && event.target.closest('.music-player-widget')) {
+                go();
+            }
+        }
+        document.addEventListener('pointerover', onIntent, true);
+        document.addEventListener('focusin', onIntent, true);
+        document.addEventListener('touchstart', onIntent, true);
 
         function afterLoad() {
-            if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 2000 });
-            else setTimeout(go, 800);
+            setTimeout(function () {
+                if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 5000 });
+                else setTimeout(go, 1200);
+            }, 3500);
         }
         if (document.readyState === 'complete') afterLoad();
         else window.addEventListener('load', afterLoad, { once: true });
@@ -734,8 +747,7 @@ const viewConfigStr = JSON.stringify({
             // Manager already initialized (late mount) – sync all UI
             syncAll();
         } else {
-            // First widget to mount – show loading and trigger init
-            setLoading(true);
+            // 首屏先呈现轻量占位，用户靠近播放器或页面稳定后再加载播放列表
             scheduleInit();
         }
     }
@@ -771,5 +783,12 @@ const viewConfigStr = JSON.stringify({
     @keyframes eq-bounce {
         0%, 100% { height: 4px; }
         50%      { height: 14px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .eq-bars .eq-bar {
+            animation: none;
+            height: 8px;
+        }
     }
 </style>

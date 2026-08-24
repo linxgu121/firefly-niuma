@@ -5,7 +5,7 @@
 ---
 
 <script>
-	import { sakuraConfig } from "@/config";
+	import { backgroundWallpaper, sakuraConfig } from "@/config";
 	import type { SakuraConfig } from "@/types/effectsConfig";
 	import type {
 		SakuraManagerLike,
@@ -543,27 +543,72 @@
 		}
 		window.sakuraInitialized = true;
 
+		const ambient = backgroundWallpaper.ambientEffects;
+		const particles = ambient?.particles;
+		const desktopQuery = window.matchMedia("(min-width: 768px)");
+		const reducedMotionQuery = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		);
+		const particleLimit = Math.max(0, Math.min(12, particles?.count ?? 12));
+
 		// 读取用户设置(localStorage 优先,缺省回退到配置默认值)
-		const storedEnabled = localStorage.getItem("sakuraEnabled");
-		const isEnabled =
+		let storedEnabled: string | null = null;
+		try {
+			storedEnabled = localStorage.getItem("sakuraEnabled");
+		} catch {
+			// 严格隐私模式下继续使用静态配置。
+		}
+		let userEnabled =
 			storedEnabled !== null ? storedEnabled === "true" : sakuraConfig.enable;
+		const effectAllowed = () =>
+			(particles?.enabled ?? false) &&
+			particleLimit > 0 &&
+			((particles?.mobile ?? false) || desktopQuery.matches) &&
+			!((ambient?.respectReducedMotion ?? true) && reducedMotionQuery.matches);
 		const cfg: SakuraConfig = Object.assign({}, sakuraConfig, {
-			enable: isEnabled,
+			enable: false,
+			sakuraNum: Math.min(sakuraConfig.sakuraNum, particleLimit),
 		});
 		initSakura(cfg);
+
+		let idleScheduled = false;
+		const applyState = () => {
+			const mgr = window.sakuraManager;
+			if (!mgr) return;
+			const shouldRun = userEnabled && effectAllowed();
+			mgr.config.enable = shouldRun;
+			if (shouldRun && !mgr.getIsRunning()) {
+				void mgr.init();
+			} else if (!shouldRun && mgr.getIsRunning()) {
+				mgr.stop();
+			}
+		};
+
+		const scheduleStart = () => {
+			if (!userEnabled || !effectAllowed() || idleScheduled) return;
+			idleScheduled = true;
+			const start = () => {
+				idleScheduled = false;
+				applyState();
+			};
+			if ("requestIdleCallback" in window) {
+				window.requestIdleCallback(start, { timeout: 1800 });
+			} else {
+				setTimeout(start, 600);
+			}
+		};
+
+		scheduleStart();
+		desktopQuery.addEventListener("change", applyState);
+		reducedMotionQuery.addEventListener("change", applyState);
 
 		// 监听设置面板的樱花特效切换事件(放在守卫内,避免重复注册)
 		window.addEventListener("sakuraToggle", (e: Event) => {
 			const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
 			if (!detail) return;
-			const mgr = window.sakuraManager;
-			if (!mgr) return;
-			if (detail.enabled && !mgr.getIsRunning()) {
-				mgr.config.enable = true;
-				void mgr.init();
-			} else if (!detail.enabled && mgr.getIsRunning()) {
-				mgr.stop();
-			}
+			userEnabled = detail.enabled;
+			if (userEnabled) scheduleStart();
+			else applyState();
 		});
 	})();
 </script>

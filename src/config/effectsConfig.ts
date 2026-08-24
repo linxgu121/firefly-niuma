@@ -6,8 +6,8 @@ export const sakuraConfig: SakuraConfig = {
 	// 是否启用樱花特效
 	enable: true,
 
-	// 樱花数量
-	sakuraNum: 21,
+	// 樱花作为唯一持续环境粒子，数量与 ambientEffects 的上限保持一致
+	sakuraNum: 12,
 
 	// 樱花越界限制次数，-1为无限循环
 	limitTimes: -1,
@@ -23,9 +23,9 @@ export const sakuraConfig: SakuraConfig = {
 	// 樱花不透明度
 	opacity: {
 		// 樱花最小不透明度
-		min: 0.3,
+		min: 0.16,
 		// 樱花最大不透明度
-		max: 0.9,
+		max: 0.42,
 	},
 
 	// 樱花移动速度
@@ -33,19 +33,19 @@ export const sakuraConfig: SakuraConfig = {
 		// 水平移动
 		horizontal: {
 			// 水平移动速度最小值
-			min: -1.7,
+			min: -1.05,
 			// 水平移动速度最大值
-			max: -1.2,
+			max: -0.72,
 		},
 		// 垂直移动
 		vertical: {
 			// 垂直移动速度最小值
-			min: 1.5,
+			min: 0.82,
 			// 垂直移动速度最大值
-			max: 2.2,
+			max: 1.28,
 		},
 		// 旋转速度
-		rotation: 0.03,
+		rotation: 0.018,
 		// 消失速度，不应大于最小不透明度
 		fadeSpeed: 0.03,
 	},

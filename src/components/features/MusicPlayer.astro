@@ -152,4 +152,10 @@ const widgetId =
     .animate-spin-slow {
         animation: spin-slow 10s linear infinite;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+        .animate-spin-slow {
+            animation: none;
+        }
+    }
 </style>

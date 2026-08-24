@@ -140,8 +140,11 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text;
     }
 
     private segmentText(text: string): string[] {
-      const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-      return Array.from(segmenter.segment(text), s => s.segment);
+      if ("Segmenter" in Intl) {
+        const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+        return Array.from(segmenter.segment(text), s => s.segment);
+      }
+      return Array.from(text);
     }
 
   }
@@ -158,28 +161,39 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text;
     });
   }
 
-  // 初始化所有打字机效果
-  function runInitWithDelay() {
-    initTypewriterElements();
-    // 兼容 banner 显隐晚于内容替换的场景
-    setTimeout(initTypewriterElements, 220);
+  type TypewriterRuntime = {
+    bound: boolean;
+    frame: number | null;
+  };
+  const runtimeWindow = window as typeof window & {
+    __fireflyTypewriterRuntime?: TypewriterRuntime;
+  };
+  const runtime = runtimeWindow.__fireflyTypewriterRuntime ?? {
+    bound: false,
+    frame: null,
+  };
+  runtimeWindow.__fireflyTypewriterRuntime = runtime;
+
+  function scheduleTypewriterInit() {
+    if (runtime.frame !== null) cancelAnimationFrame(runtime.frame);
+    runtime.frame = requestAnimationFrame(() => {
+      runtime.frame = null;
+      initTypewriterElements();
+    });
+  }
+
+  if (!runtime.bound) {
+    runtime.bound = true;
+    document.addEventListener("swup:page:view", scheduleTypewriterInit);
+    window
+      .matchMedia("(prefers-reduced-motion: reduce)")
+      .addEventListener("change", scheduleTypewriterInit);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runInitWithDelay);
+    document.addEventListener("DOMContentLoaded", scheduleTypewriterInit, { once: true });
   } else {
-    runInitWithDelay();
-  }
-
-  // 支持页面切换时重新初始化（兼容不同 swup 事件名）
-  document.addEventListener("swup:contentReplaced", runInitWithDelay);
-  document.addEventListener("swup:content:replace", runInitWithDelay);
-  document.addEventListener("swup:page:view", runInitWithDelay);
-
-  // swup hooks（若可用）
-  if (typeof window !== "undefined" && window.swup?.hooks) {
-    window.swup.hooks.on("content:replace", runInitWithDelay);
-    window.swup.hooks.on("page:view", runInitWithDelay);
+    scheduleTypewriterInit();
   }
 </script>
 

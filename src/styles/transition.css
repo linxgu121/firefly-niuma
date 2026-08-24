@@ -7,50 +7,50 @@
    -------------------------------------------------------------------------- */
 
 /* Main Content Transition */
-.transition-main {
+html[data-route-transition="true"] .transition-main {
     transition: 
         opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
         transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Leaving Animation */
-.transition-leaving {
+html[data-route-transition="true"] .transition-leaving {
     transition:
         transform 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19),
         opacity 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
 /* State: Changing (Swup) */
-html.is-changing .transition-main {
+html[data-route-transition="true"].is-changing .transition-main {
     transition: 
         opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
         transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-html.is-leaving .transition-main {
+html[data-route-transition="true"].is-leaving .transition-main {
     transition: 
         opacity 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19),
         transform 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
 /* State: Animating (Entering) */
-html.is-animating .transition-main {
+html[data-route-transition="true"].is-animating .transition-main {
     opacity: 0;
     transform: translateY(2rem);
 }
 
 /* State: Leaving */
-html.is-animating.is-leaving .transition-leaving {
+html[data-route-transition="true"].is-animating.is-leaving .transition-leaving {
     transform: translateY(-2rem);
     opacity: 0;
 }
 
 /* Swup Fade Fallback */
-html.is-changing .transition-swup-fade {
-    transition: all 120ms ease-out;
+html[data-route-transition="true"].is-changing .transition-swup-fade {
+    transition: opacity 120ms ease-out, transform 120ms ease-out;
 }
 
-html.is-animating .transition-swup-fade {
+html[data-route-transition="true"].is-animating .transition-swup-fade {
     opacity: 0;
     transform: translateY(1rem);
 }
@@ -85,6 +85,19 @@ html.is-animating .transition-swup-fade {
 .onload-animation:nth-child(3) { animation-delay: 60ms; }
 .onload-animation:nth-child(4) { animation-delay: 90ms; }
 .onload-animation:nth-child(5) { animation-delay: 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-respect-reduced-motion="true"] .transition-main,
+    html[data-respect-reduced-motion="true"] .transition-leaving,
+    html[data-respect-reduced-motion="true"] .transition-swup-fade {
+        transition: none;
+    }
+
+    html[data-respect-reduced-motion="true"] .onload-animation {
+        opacity: 1;
+        animation: none;
+    }
+}
 
 /* --------------------------------------------------------------------------
    4. Navigation Progress Bar
@@ -128,4 +141,10 @@ html.is-animating .transition-swup-fade {
     width: 100%;
     opacity: 0;
     transition: opacity 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-respect-reduced-motion="true"] #progress-bar {
+		display: none;
+    }
 }

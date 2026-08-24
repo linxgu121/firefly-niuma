@@ -118,6 +118,10 @@ html.is-page-transitioning #header-waves {
    6. 移动端优化
    -------------------------------------------------------------------------- */
 @media (max-width: 1023px) {
+	#header-waves[data-mobile-enabled="false"] {
+		display: none !important;
+	}
+
     #header-waves {
         overflow: visible;
         z-index: 25;
@@ -139,6 +143,19 @@ html.is-page-transitioning #header-waves {
         bottom: -1px !important;
         position: absolute !important;
     }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#header-waves,
+	.waves,
+	.waves > .parallax {
+		will-change: auto;
+	}
+
+	.waves > .parallax use,
+	#wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicator .scroll-down-icon {
+		animation: none;
+	}
 }
 
 /* --------------------------------------------------------------------------

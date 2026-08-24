@@ -18,6 +18,7 @@ import {
 	live2dWidgetConfig,
 	sidebarLayoutConfig,
 	siteConfig,
+	spineModelConfig,
 } from "@/config";
 import {
 	BANNER_HEIGHT,
@@ -1010,6 +1011,7 @@ const hasMultipleImages =
     <div class={`waves absolute -bottom-px h-[10vh] max-h-37.5 min-h-12.5 w-full md:h-[15vh]
         ${!wavesEnabledOnMobile ? 'hidden' : ''} ${!wavesEnabledOnDesktop ? 'md:hidden' : ''} ${wavesEnabledOnDesktop ? 'md:block' : ''}`}
         id="header-waves"
+		data-mobile-enabled={wavesEnabledOnMobile ? "true" : "false"}
         style="transform: translateZ(0);">
         <svg
             class="waves"
@@ -1179,7 +1181,7 @@ const hasMultipleImages =
             </div>
         </div>
 
-        <SpineModel></SpineModel>
+        {spineModelConfig.enable && <SpineModel />}
         {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
     </div>
 </div>

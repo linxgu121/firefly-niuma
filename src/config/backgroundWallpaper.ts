@@ -55,7 +55,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		transitionMs: 320,
 		respectManualHue: true,
 	},
-	// 阶段 6 的动效预算集中配置在这里，当前阶段不启动粒子等持续效果
+	// 全站动效预算集中配置：桌面保留轻量氛围，移动端和减少动态偏好自动降级
 	ambientEffects: {
 		cardSheen: true,
 		routeTransition: true,
@@ -120,7 +120,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 				// 桌面端是否启用水波纹动画效果
 				desktop: true,
 				// 移动端是否启用水波纹动画效果
-				mobile: true,
+				mobile: false,
 			},
 		},
 		// 渐变过渡效果配置，当水波纹关闭时自动启用，提供壁纸底部到背景色的平滑过渡

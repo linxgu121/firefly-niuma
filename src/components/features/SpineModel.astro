@@ -73,6 +73,15 @@ import { url } from "@/utils/url-utils";
   // 全局变量，防止重复初始化
   window.spineModelInitialized = window.spineModelInitialized || false;
   window.spinePlayerInstance = window.spinePlayerInstance || null;
+  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let spineInitScheduled = false;
+
+  function shouldLoadSpine() {
+    const isMobile =
+      spineModelConfig.responsive.hideOnMobile &&
+      window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint;
+    return !isMobile && !reducedMotionQuery.matches;
+  }
 
   // 消息显示函数 - 使用公共消息框组件
   function showMessage(message) {
@@ -93,11 +102,9 @@ import { url } from "@/utils/url-utils";
     if (!container) return;
 
     // 检查移动端显示设置
-    if (
-      spineModelConfig.responsive.hideOnMobile &&
-      window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint
-    ) {
+    if (!shouldLoadSpine()) {
       container.style.display = "none";
+      cleanupSpineModel();
     } else {
       container.style.display = "block";
     }
@@ -138,11 +145,7 @@ import { url } from "@/utils/url-utils";
     if (!spineModelConfig.enable) return;
 
     // 检查移动端显示设置，如果隐藏则不加载运行时
-    if (
-      spineModelConfig.responsive.hideOnMobile &&
-      window.innerWidth <= spineModelConfig.responsive.mobileBreakpoint
-    ) {
-      console.log("📱 Mobile device detected, skipping Spine model initialization");
+    if (!shouldLoadSpine()) {
       const container = document.getElementById("spine-model-container");
       if (container) container.style.display = "none";
       return;
@@ -419,6 +422,20 @@ import { url } from "@/utils/url-utils";
     }
   }
 
+  function scheduleSpineInit() {
+    if (!shouldLoadSpine() || window.spineModelInitialized || spineInitScheduled) return;
+    spineInitScheduled = true;
+    const start = () => {
+      spineInitScheduled = false;
+      if (shouldLoadSpine()) initSpineModel();
+    };
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(start, { timeout: 3000 });
+    } else {
+      window.setTimeout(start, 1200);
+    }
+  }
+
   // 监听页面卸载事件，清理资源
   window.addEventListener("beforeunload", cleanupSpineModel);
 
@@ -428,6 +445,7 @@ import { url } from "@/utils/url-utils";
       // 只更新响应式显示，不重新创建模型
       setTimeout(() => {
         updateResponsiveDisplay();
+        scheduleSpineInit();
       }, 100);
     });
   }
@@ -436,17 +454,25 @@ import { url } from "@/utils/url-utils";
   window.addEventListener("popstate", () => {
     setTimeout(() => {
       updateResponsiveDisplay();
+      scheduleSpineInit();
     }, 100);
   });
 
   // 监听窗口大小变化
-  window.addEventListener("resize", updateResponsiveDisplay);
+  window.addEventListener("resize", () => {
+    updateResponsiveDisplay();
+    scheduleSpineInit();
+  });
+  reducedMotionQuery.addEventListener("change", () => {
+    updateResponsiveDisplay();
+    scheduleSpineInit();
+  });
 
-  // 页面加载完成后初始化（只初始化一次）
+  // 首屏稳定后再初始化；移动端和减少动态模式不加载运行时
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initSpineModel);
+    document.addEventListener("DOMContentLoaded", scheduleSpineInit, { once: true });
   } else {
-    initSpineModel();
+    scheduleSpineInit();
   }
 </script>
 )}

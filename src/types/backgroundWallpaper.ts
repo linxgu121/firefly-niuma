@@ -8,7 +8,7 @@ export type BackgroundWallpaperConfig = {
 				desktop?: string | string[];
 				mobile?: string | string[];
 				playerUrl?: string | string[]; // 背景视频播放地址，支持单个视频路径或数组（多视频列表循环）
-		}; // 支持单个图片、图片数组或分别设置桌面端和移动端图片
+		  }; // 支持单个图片、图片数组或分别设置桌面端和移动端图片
 	/** 根据当前可见壁纸的 cover 裁剪区域生成主题色。 */
 	adaptivePalette?: {
 		enabled: boolean;
@@ -22,6 +22,8 @@ export type BackgroundWallpaperConfig = {
 	ambientEffects?: {
 		cardSheen?: boolean;
 		routeTransition?: boolean;
+		/** 交互式壁纸水波：CPU 高度场模拟，WebGL 仅负责折射渲染。 */
+		rippleRefraction?: WallpaperRippleConfig;
 		particles?: {
 			enabled: boolean;
 			count?: number;
@@ -123,6 +125,41 @@ export type BackgroundWallpaperConfig = {
 	fullscreen?: {
 		position?: string; // 壁纸位置，支持CSS object-position的所有值
 	};
+};
+
+export type WallpaperRippleConfig = {
+	/** 总开关。 */
+	enabled: boolean;
+	/** 桌面端是否启用，默认 true。 */
+	desktop?: boolean;
+	/** 移动端是否启用，默认 false。 */
+	mobile?: boolean;
+	/** 生效的壁纸模式，默认 overlay 与 fullscreen。 */
+	modes?: Array<"banner" | "fullscreen" | "overlay">;
+	/** 一个模拟格点对应的 CSS 像素数。 */
+	cellSize?: number;
+	/** 慢速涟漪层阻尼。 */
+	rippleDamping?: number;
+	/** 快速鼠标尾迹层阻尼。 */
+	trailDamping?: number;
+	/** 折射纹理坐标偏移强度。 */
+	refractionStrength?: number;
+	/** 指针移动扰动半径，单位 CSS px。 */
+	pointerRadius?: number;
+	/** 指针移动扰动强度。 */
+	pointerStrength?: number;
+	/** 点击扰动半径，单位 CSS px。 */
+	clickRadius?: number;
+	/** 点击扰动强度。 */
+	clickStrength?: number;
+	/** 点击后回弹脉冲延迟，单位 ms。 */
+	reboundDelayMs?: number;
+	/** 回弹脉冲强度。 */
+	reboundStrength?: number;
+	/** Canvas 最大设备像素比，限制 GPU 填充压力。 */
+	maxDpr?: number;
+	/** 无输入且波场平静后停止逐帧更新的等待时间。 */
+	idleAfterMs?: number;
 };
 
 export type GlassSurfaceConfig = {

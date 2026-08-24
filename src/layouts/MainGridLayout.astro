@@ -12,6 +12,7 @@ import FloatingControls from "@/components/controls/FloatingControls.astro";
 import ScrollDownIndicator from "@/components/controls/ScrollDownIndicator.astro";
 import BackgroundPlayer from "@/components/features/BackgroundPlayer.astro";
 import TypewriterText from "@/components/features/TypewriterText.astro";
+import WallpaperRippleEffect from "@/components/features/WallpaperRippleEffect.astro";
 import {
 	backgroundWallpaper,
 	displaySettingsConfig,
@@ -860,6 +861,8 @@ const hasMultipleImages =
     {backgroundWallpaper.playerEnable && typeof backgroundWallpaper.src === "object" && !Array.isArray(backgroundWallpaper.src) && backgroundWallpaper.src.playerUrl && (
         <BackgroundPlayer playerUrl={backgroundWallpaper.src.playerUrl} playerMode={backgroundWallpaper.common?.playerMode ?? "order"} />
     )}
+
+	<WallpaperRippleEffect />
 
     <div id="banner-dim-container" class="absolute inset-0 z-10 pointer-events-none">
         {showBannerDim && <div class="banner-dim-overlay absolute inset-0" style={`background: rgba(0, 0, 0, ${dimOpacity})`}></div>}

@@ -59,6 +59,25 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	ambientEffects: {
 		cardSheen: true,
 		routeTransition: true,
+		// 指针划过或点击时才唤醒，静止后自动休眠；WebGL 失败则只绘制轻量高光线
+		rippleRefraction: {
+			enabled: true,
+			desktop: true,
+			mobile: false,
+			modes: ["overlay", "fullscreen"],
+			cellSize: 5,
+			rippleDamping: 0.988,
+			trailDamping: 0.92,
+			refractionStrength: 0.032,
+			pointerRadius: 16,
+			pointerStrength: -0.2,
+			clickRadius: 42,
+			clickStrength: -1.1,
+			reboundDelayMs: 400,
+			reboundStrength: 0.32,
+			maxDpr: 1.5,
+			idleAfterMs: 1200,
+		},
 		particles: {
 			enabled: true,
 			count: 12,

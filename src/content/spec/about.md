@@ -1,29 +1,28 @@
-# 关于我 / About Me
+# 关于我
 
-你好！我是 **夏叶** ，一个在数字世界中默默无闻的一片叶子。
+你好，我是 **linxgu121**。
 
-## 🛠️ 关于本站
+喜欢玩游戏，也热爱游戏开发。这里记录我在学习、实践和排查问题过程中整理出的答案，希望这些内容也能帮到正在做游戏的你。
 
-这个网站使用 **Astro** 框架构建，采用了 [Firefly](https://github.com/CuteLeaf/Firefly) 模板，Firefly 是基于 [Fuwari](https://github.com/saicaca/fuwari) 的二次开发。
+## 我在关注什么
 
-**Firefly** 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。
+- UE 与 Unity 游戏开发
+- C++、蓝图与玩法原型
+- Shader、渲染管线与引擎源码
+- 项目实践中的问题定位和复盘
 
+## 关于这个博客
 
-**🖥️在线预览： [Firefly - Demo site](https://firefly.cuteleaf.cn/)**
+这是我的个人技术博客，文章只使用真实的学习与项目记录，不会为了填充页面添加演示内容。网站使用 **Astro** 构建，并基于开源主题 [Firefly](https://github.com/CuteLeaf/Firefly) 持续改造。
 
-**🏠我的博客： [https://blog.cuteleaf.cn](https://blog.cuteleaf.cn/)**
+我保留了喜欢的二次元壁纸与头像，也在逐步完善阅读体验、响应式布局、壁纸自适应配色和玻璃材质。
 
-**📝Firefly使用文档： [https://docs-firefly.cuteleaf.cn](https://docs-firefly.cuteleaf.cn/)**
+## 找到我
 
-**⭐Firefly开源地址：[https://github.com/CuteLeaf/Firefly](https://github.com/CuteLeaf/Firefly)** 
-
-**⭐Fuwari开源地址：[https://github.com/saicaca/fuwari](https://github.com/saicaca/fuwari)**
-
-::github{repo="CuteLeaf/Firefly"}
-
-::github{repo="saicaca/fuwari"}
+- [GitHub](https://github.com/linxgu121)
+- [博客源码](https://github.com/linxgu121/firefly-niuma)
+- [RSS 订阅](/rss/)
 
 ---
 
-*感谢你的来访！希望在这里能找到对你有用的内容！*
-
+感谢你的来访，希望这里的内容对你有用。

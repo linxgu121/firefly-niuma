@@ -20,11 +20,8 @@ const counts: Record<HomeStatKey, number> = {
 const avatar = profileConfig.avatar || "assets/images/aimily.png";
 ---
 
-<section class="home-hero card-base onload-animation" aria-labelledby="home-hero-title">
-  <Icon is:inline name="material-symbols:star-rounded" class="hero-decoration hero-decoration-left" aria-hidden="true" />
-  <Icon is:inline name="material-symbols:auto-awesome-rounded" class="hero-decoration hero-decoration-right" aria-hidden="true" />
-
-  <a class="hero-avatar focus-ring" href={url("/about/")} aria-label={`了解 ${profileConfig.name}`}>
+<section class="home-hero onload-animation" aria-labelledby="home-hero-title">
+  <div class="hero-avatar" aria-hidden="true">
     <ImageWrapper
       src={avatar}
       alt={`${profileConfig.name} 的头像`}
@@ -37,8 +34,7 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
       sizes="(max-width: 640px) 88px, 104px"
       showOverlay={false}
     />
-    <span class="hero-avatar-ring" aria-hidden="true"></span>
-  </a>
+  </div>
 
   <p class="hero-eyebrow">HELLO, I'M {profileConfig.name.toUpperCase()}</p>
   <h1 id="home-hero-title" class="hero-title">{homePageConfig.hero.title}</h1>
@@ -79,68 +75,39 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
 <style>
   .home-hero {
     position: relative;
-    isolation: isolate;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: clamp(2rem, 5vw, 3.6rem) clamp(1rem, 4vw, 3.5rem) 1.6rem;
+    padding: clamp(2.2rem, 5vw, 3.8rem) clamp(1rem, 4vw, 3.5rem) 1.8rem;
     text-align: center;
-    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line-divider));
-    background:
-      radial-gradient(circle at 50% -25%, color-mix(in srgb, var(--primary) 19%, transparent), transparent 58%),
-      linear-gradient(145deg, color-mix(in srgb, var(--card-bg) 94%, white 6%), var(--card-bg));
-    box-shadow: var(--shadow-card);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
-
-  .home-hero::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    opacity: 0.34;
-    background-image: radial-gradient(circle, color-mix(in srgb, var(--primary) 38%, transparent) 1px, transparent 1.5px);
-    background-size: 28px 28px;
-    mask-image: linear-gradient(to bottom, black, transparent 58%);
-    pointer-events: none;
-  }
-
-  .hero-decoration {
-    position: absolute;
-    color: color-mix(in srgb, var(--primary) 72%, white);
-    opacity: 0.62;
-    font-size: clamp(1.4rem, 3vw, 2.2rem);
-    filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--primary) 28%, transparent));
-    pointer-events: none;
-  }
-
-  .hero-decoration-left { left: 9%; top: 16%; transform: rotate(-12deg); }
-  .hero-decoration-right { right: 10%; top: 24%; transform: rotate(14deg); }
 
   .hero-avatar {
-    position: relative;
     display: block;
+    flex: 0 0 auto;
+    overflow: hidden;
     width: 6.5rem;
     height: 6.5rem;
     margin-bottom: 1rem;
+    border: 2px solid color-mix(in srgb, white 78%, var(--primary));
     border-radius: 50%;
-    transition: transform 220ms ease;
-  }
-
-  .hero-avatar-image {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
+    background: color-mix(in srgb, var(--card-bg) 30%, transparent);
     box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 22%, transparent);
   }
 
-  .hero-avatar-ring {
-    position: absolute;
-    inset: -0.34rem;
+  .hero-avatar :global(.hero-avatar-image) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-avatar :global(picture),
+  .hero-avatar :global(img) {
     border-radius: inherit;
-    border: 2px solid color-mix(in srgb, var(--primary) 58%, white);
-    box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--card-bg) 76%, transparent);
-    pointer-events: none;
   }
 
   .hero-eyebrow {
@@ -149,6 +116,7 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.17em;
+    text-shadow: 0 1px 8px color-mix(in srgb, var(--page-bg) 72%, transparent);
   }
 
   .hero-title {
@@ -170,6 +138,7 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
     color: var(--text-75);
     font-size: clamp(0.92rem, 2vw, 1.08rem);
     font-weight: 650;
+    text-shadow: 0 1px 8px color-mix(in srgb, var(--page-bg) 68%, transparent);
   }
 
   .hero-description {
@@ -178,6 +147,7 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
     color: var(--text-60);
     font-size: 0.94rem;
     line-height: 1.8;
+    text-shadow: 0 1px 8px color-mix(in srgb, var(--page-bg) 72%, transparent);
   }
 
   .hero-actions {
@@ -255,7 +225,6 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
   }
 
   @media (hover: hover) {
-    .hero-avatar:hover { transform: translateY(-3px) rotate(2deg); }
     .hero-cta:hover { transform: translateY(-2px); }
     .hero-cta-primary:hover { box-shadow: 0 11px 24px color-mix(in srgb, var(--primary) 35%, transparent); }
     .hero-cta-secondary:hover { background: color-mix(in srgb, var(--primary) 10%, var(--card-bg)); }
@@ -264,7 +233,6 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
   @media (max-width: 640px) {
     .home-hero { padding: 1.7rem 0.9rem 1.25rem; }
     .hero-avatar { width: 5.5rem; height: 5.5rem; }
-    .hero-decoration { display: none; }
     .hero-description { max-width: 19rem; font-size: 0.86rem; }
     .hero-actions { width: 100%; }
     .hero-cta { flex: 1 1 8rem; max-width: 10rem; padding-inline: 0.8rem; }
@@ -273,7 +241,6 @@ const avatar = profileConfig.avatar || "assets/images/aimily.png";
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-avatar,
     .hero-cta { transition: none; }
   }
 </style>

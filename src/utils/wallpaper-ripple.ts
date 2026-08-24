@@ -239,6 +239,7 @@ const createProgram = (gl: WebGL2RenderingContext) => {
 		uniform vec2 u_height_texel;
 		uniform float u_refraction;
 		uniform float u_wallpaper_scale;
+		uniform bool u_manual_height_filter;
 		in vec2 v_uv;
 		out vec4 out_color;
 
@@ -256,20 +257,56 @@ const createProgram = (gl: WebGL2RenderingContext) => {
 			return (covered - 0.5) / u_wallpaper_scale + 0.5;
 		}
 
+		float read_height_texel(vec2 texel_position) {
+			vec2 texture_size = 1.0 / u_height_texel;
+			vec2 clamped_texel = clamp(
+				texel_position,
+				vec2(0.0),
+				texture_size - 1.0
+			);
+			return texture(
+				u_height,
+				(clamped_texel + 0.5) * u_height_texel
+			).r;
+		}
+
 		float sample_height(vec2 field_uv) {
-			return texture(u_height, clamp(field_uv, vec2(0.0), vec2(1.0))).r;
+			vec2 clamped_uv = clamp(field_uv, vec2(0.0), vec2(1.0));
+			if (!u_manual_height_filter) {
+				return texture(u_height, clamped_uv).r;
+			}
+			vec2 texture_size = 1.0 / u_height_texel;
+			vec2 texel_position = clamped_uv * texture_size - 0.5;
+			vec2 base_texel = floor(texel_position);
+			vec2 blend = fract(texel_position);
+			float top_left = read_height_texel(base_texel);
+			float top_right = read_height_texel(base_texel + vec2(1.0, 0.0));
+			float bottom_left = read_height_texel(base_texel + vec2(0.0, 1.0));
+			float bottom_right = read_height_texel(base_texel + vec2(1.0, 1.0));
+			return mix(
+				mix(top_left, top_right, blend.x),
+				mix(bottom_left, bottom_right, blend.x),
+				blend.y
+			);
+		}
+
+		vec2 viewport_to_field(vec2 viewport_uv) {
+			vec2 field_inset = u_height_texel * 1.5;
+			vec2 field_span = vec2(1.0) - field_inset * 2.0;
+			return field_inset + vec2(viewport_uv.x, 1.0 - viewport_uv.y) * field_span;
 		}
 
 		void main() {
-			vec2 field_uv = vec2(v_uv.x, 1.0 - v_uv.y);
+			vec2 field_uv = viewport_to_field(v_uv);
 			float left_h = sample_height(field_uv - vec2(u_height_texel.x, 0.0));
 			float right_h = sample_height(field_uv + vec2(u_height_texel.x, 0.0));
 			float top_h = sample_height(field_uv - vec2(0.0, u_height_texel.y));
 			float bottom_h = sample_height(field_uv + vec2(0.0, u_height_texel.y));
 			float center_h = sample_height(field_uv);
 			vec2 gradient = vec2(right_h - left_h, bottom_h - top_h);
+			vec2 smooth_gradient = gradient / (1.0 + length(gradient) * 0.85);
 			vec2 displaced = clamp(
-				v_uv + gradient * u_refraction * vec2(1.0, 0.72),
+				v_uv + smooth_gradient * u_refraction * vec2(1.0, 0.72),
 				vec2(0.0),
 				vec2(1.0)
 			);
@@ -310,6 +347,7 @@ class WebGLRippleRenderer implements RippleRenderer {
 		heightTexel: WebGLUniformLocation;
 		refraction: WebGLUniformLocation;
 		wallpaperScale: WebGLUniformLocation;
+		manualHeightFilter: WebGLUniformLocation;
 	};
 	private imageWidth = 1;
 	private imageHeight = 1;
@@ -354,6 +392,7 @@ class WebGLRippleRenderer implements RippleRenderer {
 			heightTexel: uniform("u_height_texel"),
 			refraction: uniform("u_refraction"),
 			wallpaperScale: uniform("u_wallpaper_scale"),
+			manualHeightFilter: uniform("u_manual_height_filter"),
 		};
 
 		gl.useProgram(this.program);
@@ -375,13 +414,19 @@ class WebGLRippleRenderer implements RippleRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		// DOM 壁纸需要翻转，高度数组则保持 CPU 的从上到下行序。
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 		this.imageWidth = image.naturalWidth || 1;
 		this.imageHeight = image.naturalHeight || 1;
 
 		gl.activeTexture(gl.TEXTURE1);
 		gl.bindTexture(gl.TEXTURE_2D, this.heightTexture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		const supportsFloatLinear = Boolean(
+			gl.getExtension("OES_texture_float_linear"),
+		);
+		const heightFilter = supportsFloatLinear ? gl.LINEAR : gl.NEAREST;
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, heightFilter);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, heightFilter);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -389,6 +434,7 @@ class WebGLRippleRenderer implements RippleRenderer {
 		gl.uniform1i(gl.getUniformLocation(this.program, "u_height"), 1);
 		gl.uniform1f(this.uniforms.refraction, config.refractionStrength);
 		gl.uniform1f(this.uniforms.wallpaperScale, 1.05);
+		gl.uniform1i(this.uniforms.manualHeightFilter, supportsFloatLinear ? 0 : 1);
 	}
 
 	resize(
@@ -508,8 +554,8 @@ class CanvasRippleRenderer implements RippleRenderer {
 		context.globalCompositeOperation = "screen";
 		context.lineWidth = 1;
 		context.lineCap = "round";
-		const xScale = this.cssWidth / Math.max(1, this.gridWidth - 1);
-		const yScale = this.cssHeight / Math.max(1, this.gridHeight - 1);
+		const xScale = this.cssWidth / Math.max(1, this.gridWidth - 3);
+		const yScale = this.cssHeight / Math.max(1, this.gridHeight - 3);
 
 		for (let row = 2; row < this.gridHeight - 2; row += 3) {
 			for (let column = 2; column < this.gridWidth - 2; column += 3) {
@@ -521,8 +567,8 @@ class CanvasRippleRenderer implements RippleRenderer {
 				if (magnitude < 0.025) continue;
 				const alpha = Math.min(0.2, magnitude * 0.24);
 				const length = Math.min(7, 2 + magnitude * 6);
-				const centerX = column * xScale;
-				const centerY = row * yScale;
+				const centerX = (column - 1) * xScale;
+				const centerY = (row - 1) * yScale;
 				const inverse = 1 / Math.max(magnitude, 0.0001);
 				const normalX = -dy * inverse;
 				const normalY = dx * inverse;
@@ -796,13 +842,19 @@ export class WallpaperRippleController {
 		) {
 			return null;
 		}
+		const normalizedX = clamp(
+			(clientX - rect.left) / Math.max(1, rect.width),
+			0,
+			1,
+		);
+		const normalizedY = clamp(
+			(clientY - rect.top) / Math.max(1, rect.height),
+			0,
+			1,
+		);
 		return {
-			x:
-				((clientX - rect.left) / Math.max(1, rect.width)) *
-				(this.gridWidth - 1),
-			y:
-				((clientY - rect.top) / Math.max(1, rect.height)) *
-				(this.gridHeight - 1),
+			x: 1 + normalizedX * (this.gridWidth - 3),
+			y: 1 + normalizedY * (this.gridHeight - 3),
 		};
 	}
 

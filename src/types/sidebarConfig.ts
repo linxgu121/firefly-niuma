@@ -56,6 +56,8 @@ export type SiteInfoConfig = {
 export type CalendarConfig = {
 	// 是否显示年度文章热力图
 	showHeatmap: boolean;
+	// 多日期筛选时最多显示的文章数，组件会限制在 1-5 篇
+	maxSelectedPosts?: number;
 };
 
 // 广告栏配置

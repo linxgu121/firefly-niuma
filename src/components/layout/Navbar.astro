@@ -86,7 +86,8 @@ let links: NavBarLink[] = resolveNavbarLinks(
 const logoConfig = siteConfig.navbar.logo;
 const logoAlt = logoConfig?.alt || siteConfig.title;
 const logoIsImage = logoConfig?.type === "image" || logoConfig?.type === "url";
-const logoBaseClass = "navbar-logo h-6 w-6 mb-0.5 mr-2 object-contain";
+const logoBaseClass =
+	"navbar-logo h-8 w-8 shrink-0 mr-2 rounded-full border border-white/70 object-cover shadow-sm ring-1 ring-black/10 dark:border-white/25 dark:ring-white/15";
 
 const logoFiles = import.meta.glob<ImageMetadata>(
 	"../../**/*.{png,jpg,jpeg,webp,avif,gif,svg}",
@@ -164,7 +165,7 @@ const logoVariants = await Promise.all(
                                                 fetchpriority="high"
                                             />
                                         ) : (
-                                            <img src={variant.src} alt={logoAlt} class={variant.class} data-logo-theme={variant.theme} fetchpriority="high" />
+                                            <img src={variant.src} alt={logoAlt} class={variant.class} data-logo-theme={variant.theme} width="32" height="32" loading="eager" decoding="async" fetchpriority="high" />
                                         ))
                                     ) : (
                                         <Icon is:inline name="material-symbols:home-pin-outline" class="navbar-logo text-[1.5rem] mb-0.5 mr-2" />

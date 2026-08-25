@@ -130,6 +130,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 				calendar: {
 					// 是否显示年度文章热力图
 					showHeatmap: true,
+					// 多选日期后按时间从早到晚显示，最多 5 篇
+					maxSelectedPosts: 5,
 				},
 			},
 		},

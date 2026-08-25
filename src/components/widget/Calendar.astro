@@ -12,7 +12,12 @@ interface Props {
 	widgetConfig?: WidgetComponentConfig;
 }
 
-const { class: className, style } = Astro.props;
+const { class: className, style, widgetConfig } = Astro.props;
+const configuredMaxSelectedPosts =
+	widgetConfig?.specificConfig?.calendar?.maxSelectedPosts ?? 5;
+const maxSelectedPosts = Number.isFinite(configuredMaxSelectedPosts)
+	? Math.min(5, Math.max(1, Math.trunc(configuredMaxSelectedPosts)))
+	: 5;
 
 // 标题由组件内部自定义渲染（图标 + 发文日历 + 年份），不走 WidgetLayout 默认标题
 const showTitle = false;
@@ -74,9 +79,27 @@ const postUrlPrefix = url("/posts/");
     {/* 日期格（客户端渲染当前月） */}
     <div class="grid grid-cols-7 gap-0.5" id="cal-day-grid"></div>
 
-    {/* 当日文章列表（点击有圆点的日期展开） */}
+    <p class="mt-1.5 text-[10px] leading-4 text-neutral-500 dark:text-neutral-400">
+      点击带圆点的日期可多选
+    </p>
+
+    {/* 多日期文章列表 */}
     <div id="calendar-posts" class="hidden mt-3">
       <div class="border-t border-neutral-200 dark:border-neutral-700 mb-2"></div>
+      <div class="mb-1.5 flex items-start justify-between gap-2">
+        <span
+          id="calendar-posts-summary"
+          class="min-w-0 text-[10px] leading-4 text-neutral-500 dark:text-neutral-400"
+          aria-live="polite"
+        ></span>
+        <button
+          id="calendar-posts-clear"
+          type="button"
+          class="shrink-0 rounded-md px-1 py-0.5 text-[10px] text-(--primary) transition-colors hover:bg-(--btn-plain-bg-hover) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--primary)"
+        >
+          清除
+        </button>
+      </div>
       <div
         class="flex flex-col gap-1 max-h-44 overflow-y-auto custom-scrollbar"
         id="calendar-posts-list"
@@ -89,7 +112,7 @@ const postUrlPrefix = url("/posts/");
 <script
   is:inline
   data-swup-ignore-script
-  define:vars={{ calendarDataUrl, postUrlPrefix }}
+  define:vars={{ calendarDataUrl, postUrlPrefix, maxSelectedPosts }}
 >
   function initPostCalendar() {
     const yearEl = document.getElementById("cal-year");
@@ -107,6 +130,8 @@ const postUrlPrefix = url("/posts/");
     fetch(calendarDataUrl)
       .then((r) => r.json())
       .then((posts) => {
+        if (!Array.isArray(posts)) throw new Error("文章日历数据格式无效");
+
         // 按日期归组
         const postMap = {};
         posts.forEach((post) => {
@@ -129,55 +154,109 @@ const postUrlPrefix = url("/posts/");
           const list = postMap[day] || [];
           const hasPosts = list.length > 0;
           const isToday = day === today;
+          const cellTag = hasPosts ? "button" : "span";
+          const accessibility = hasPosts
+            ? `type="button" aria-pressed="false" aria-label="${month + 1}月${day}日，${list.length}篇文章"`
+            : "";
           html += `
-            <div
-              class="day-cell flex items-center justify-center rounded-full relative cursor-pointer text-xs leading-none transition
+            <${cellTag}
+              class="day-cell flex items-center justify-center rounded-full relative text-xs leading-none transition
                 ${hasPosts ? "has-posts text-neutral-900 dark:text-neutral-100 font-bold hover:bg-(--btn-plain-bg-hover)" : "text-neutral-700 dark:text-neutral-300"}
                 ${isToday ? "is-today" : ""}"
               data-day="${day}"
               data-has-posts="${hasPosts}"
+              ${accessibility}
             >
               <span class="day-num">${day}</span>
               ${hasPosts ? '<span class="day-dot absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-(--primary)"></span>' : ""}
               ${hasPosts && list.length > 1 ? `<span class="day-count absolute top-0 right-0 text-[9px] text-(--primary) font-bold leading-none">${list.length}</span>` : ""}
-            </div>
+            </${cellTag}>
           `;
         }
         gridEl.innerHTML = html;
 
-        // 点击有文章的日期 → 展开当日文章列表
+        // 日期可以累加选择，所有文章按发布时间从早到晚显示
         const wrapper = document.getElementById("calendar-posts");
         const listEl = document.getElementById("calendar-posts-list");
-        let selected = null;
+        const summaryEl = document.getElementById("calendar-posts-summary");
+        const clearButton = document.getElementById("calendar-posts-clear");
+        const selectedDays = new Set();
 
-        gridEl.querySelectorAll(".day-cell[data-has-posts='true']").forEach((cell) => {
+        const renderSelectedPosts = () => {
+          const selectedPosts = Array.from(selectedDays)
+            .flatMap((day) => postMap[day] || [])
+            .sort((a, b) => Number(a.published) - Number(b.published));
+
+          if (selectedPosts.length === 0) {
+            if (wrapper) wrapper.classList.add("hidden");
+            if (listEl) listEl.replaceChildren();
+            if (summaryEl) summaryEl.textContent = "";
+            return;
+          }
+
+          const visiblePosts = selectedPosts.slice(0, maxSelectedPosts);
+          if (summaryEl) {
+            summaryEl.textContent =
+              selectedPosts.length > visiblePosts.length
+                ? `已选 ${selectedDays.size} 天，共 ${selectedPosts.length} 篇，显示最早 ${visiblePosts.length} 篇`
+                : `已选 ${selectedDays.size} 天，共 ${selectedPosts.length} 篇，从早到晚`;
+          }
+
+          if (listEl) {
+            const fragment = document.createDocumentFragment();
+            visiblePosts.forEach((post) => {
+              const published = new Date(post.published);
+              const link = document.createElement("a");
+              link.href = `${postUrlPrefix}${post.id}/`;
+              link.className =
+                "flex items-center justify-between gap-2 rounded-md px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-(--btn-plain-bg-hover) hover:text-(--primary) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--primary) dark:text-neutral-300";
+
+              const title = document.createElement("span");
+              title.className = "min-w-0 truncate";
+              title.textContent = post.title;
+              title.title = post.title;
+
+              const time = document.createElement("time");
+              time.className =
+                "shrink-0 whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400";
+              time.dateTime = published.toISOString();
+              const dateLabel = `${published.getMonth() + 1}-${published.getDate()}`;
+              const hasExplicitTime =
+                published.getUTCHours() !== 0 ||
+                published.getUTCMinutes() !== 0 ||
+                published.getUTCSeconds() !== 0;
+              time.textContent = hasExplicitTime
+                ? `${dateLabel} ${String(published.getHours()).padStart(2, "0")}:${String(published.getMinutes()).padStart(2, "0")}`
+                : dateLabel;
+
+              link.append(title, time);
+              fragment.append(link);
+            });
+            listEl.replaceChildren(fragment);
+          }
+          if (wrapper) wrapper.classList.remove("hidden");
+        };
+
+        gridEl.querySelectorAll("button.day-cell[data-has-posts='true']").forEach((cell) => {
           cell.addEventListener("click", () => {
-            const day = cell.getAttribute("data-day");
-            if (selected === cell) {
-              cell.classList.remove("calendar-day-selected");
-              selected = null;
-              if (wrapper) wrapper.classList.add("hidden");
-              return;
-            }
-            if (selected) selected.classList.remove("calendar-day-selected");
-            selected = cell;
-            cell.classList.add("calendar-day-selected");
-            const list = postMap[day] || [];
-            if (listEl) {
-              listEl.innerHTML = list
-                .map((post) => {
-                  const d = new Date(post.published);
-                  return `
-                    <a href="${postUrlPrefix}${post.id}/" class="flex justify-between items-center text-xs text-neutral-700 dark:text-neutral-300 hover:text-(--primary) transition-colors px-2 py-1 rounded-md hover:bg-(--btn-plain-bg-hover)">
-                      <span class="truncate">${post.title}</span>
-                      <span class="text-neutral-500 dark:text-neutral-400 ml-2 whitespace-nowrap">${d.getMonth() + 1}-${d.getDate()}</span>
-                    </a>
-                  `;
-                })
-                .join("");
-            }
-            if (wrapper) wrapper.classList.remove("hidden");
+            const day = Number(cell.getAttribute("data-day"));
+            if (!Number.isInteger(day)) return;
+            const willSelect = !selectedDays.has(day);
+            if (willSelect) selectedDays.add(day);
+            else selectedDays.delete(day);
+            cell.classList.toggle("calendar-day-selected", willSelect);
+            cell.setAttribute("aria-pressed", String(willSelect));
+            renderSelectedPosts();
           });
+        });
+
+        clearButton?.addEventListener("click", () => {
+          selectedDays.clear();
+          gridEl.querySelectorAll("button.calendar-day-selected").forEach((cell) => {
+            cell.classList.remove("calendar-day-selected");
+            cell.setAttribute("aria-pressed", "false");
+          });
+          renderSelectedPosts();
         });
       })
       .catch((e) => console.error("发文日历数据加载失败", e));
@@ -204,7 +283,19 @@ const postUrlPrefix = url("/posts/");
   /* 日期行高度：窄栏配高行，形成细长形态 */
   :global(#calendar-widget .day-cell) {
     height: 27px;
+		appearance: none;
+		border: 0;
+		padding: 0;
   }
+
+  :global(#calendar-widget button.day-cell) {
+		cursor: pointer;
+	}
+
+  :global(#calendar-widget button.day-cell:focus-visible) {
+		outline: 2px solid var(--primary);
+		outline-offset: 1px;
+	}
 
   /* 今天：实心主题色圆点 */
   :global(#calendar-widget .day-cell.is-today) {
@@ -219,6 +310,14 @@ const postUrlPrefix = url("/posts/");
   }
 
   :global(#calendar-widget .day-cell.calendar-day-selected) {
-    background-color: var(--btn-regular-bg);
+		background-color: var(--btn-regular-bg);
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 45%, transparent);
+	}
+
+	:global(#calendar-widget .day-cell.is-today.calendar-day-selected) {
+		background-color: var(--primary);
+		box-shadow:
+			0 0 0 2px color-mix(in oklab, var(--primary) 30%, transparent),
+			0 1px 3px color-mix(in oklab, var(--primary) 40%, transparent);
   }
 </style>

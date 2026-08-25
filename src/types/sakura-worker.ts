@@ -1,4 +1,11 @@
+import type { SakuraWaterImpactConfig } from "./backgroundWallpaper";
 import type { SakuraConfig } from "./effectsConfig";
+
+export type SakuraWaterImpactDetail = {
+	x: number;
+	y: number;
+	scale: number;
+};
 
 /**
  * 樱花特效 Worker 通信消息类型
@@ -9,6 +16,7 @@ export type SakuraWorkerInboundMessage =
 	| {
 			type: "init";
 			config: SakuraConfig;
+			waterInteraction: SakuraWaterImpactConfig;
 			/** 通过 transfer 转移给 Worker 的 OffscreenCanvas */
 			canvas: OffscreenCanvas;
 			width: number;
@@ -34,6 +42,10 @@ export type SakuraWorkerOutboundMessage =
 	| {
 			type: "messageError";
 			message: string;
+	  }
+	| {
+			type: "impact";
+			detail: SakuraWaterImpactDetail;
 	  };
 
 /**

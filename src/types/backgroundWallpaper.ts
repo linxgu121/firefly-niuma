@@ -156,10 +156,25 @@ export type WallpaperRippleConfig = {
 	reboundDelayMs?: number;
 	/** 回弹脉冲强度。 */
 	reboundStrength?: number;
+	/** 樱花落入水面时产生的轻量波纹。 */
+	petalImpacts?: SakuraWaterImpactConfig;
 	/** Canvas 最大设备像素比，限制 GPU 填充压力。 */
 	maxDpr?: number;
 	/** 无输入且波场平静后停止逐帧更新的等待时间。 */
 	idleAfterMs?: number;
+};
+
+export type SakuraWaterImpactConfig = {
+	/** 樱花与水面联动开关。 */
+	enabled: boolean;
+	/** 水面在视口中的垂直位置，0-1。 */
+	waterline?: number;
+	/** 单片樱花落水的波纹半径，单位 CSS px。 */
+	radius?: number;
+	/** 单片樱花落水的扰动强度。 */
+	strength?: number;
+	/** 两次落水波纹的最小间隔，单位 ms。 */
+	minIntervalMs?: number;
 };
 
 export type GlassSurfaceConfig = {

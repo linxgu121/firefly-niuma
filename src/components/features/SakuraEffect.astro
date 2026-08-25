@@ -6,9 +6,11 @@
 
 <script>
 	import { backgroundWallpaper, sakuraConfig } from "@/config";
+	import type { SakuraWaterImpactConfig } from "@/types/backgroundWallpaper";
 	import type { SakuraConfig } from "@/types/effectsConfig";
 	import type {
 		SakuraManagerLike,
+		SakuraWaterImpactDetail,
 		SakuraWorkerOutboundMessage,
 	} from "@/types/sakura-worker";
 
@@ -18,6 +20,15 @@
 	// ===========================================================================
 	let windowWidth = window.innerWidth;
 	let windowHeight = window.innerHeight;
+	const clamp = (value: number, min: number, max: number) =>
+		Math.min(max, Math.max(min, value));
+	const emitWaterImpact = (detail: SakuraWaterImpactDetail) => {
+		window.dispatchEvent(
+			new CustomEvent<SakuraWaterImpactDetail>("sakuraWaterImpact", {
+				detail,
+			}),
+		);
+	};
 
 	function getRandomMainThread(
 		option: "x" | "y" | "s" | "r" | "a",
@@ -91,6 +102,8 @@
 		img: HTMLImageElement;
 		limitArray: number[];
 		config: SakuraConfig;
+		waterInteraction: SakuraWaterImpactConfig;
+		onImpact: (detail: SakuraWaterImpactDetail) => void;
 
 		constructor(
 			x: number,
@@ -103,6 +116,8 @@
 			img: HTMLImageElement,
 			limitArray: number[],
 			config: SakuraConfig,
+			waterInteraction: SakuraWaterImpactConfig,
+			onImpact: (detail: SakuraWaterImpactDetail) => void,
 		) {
 			this.x = x;
 			this.y = y;
@@ -114,6 +129,8 @@
 			this.img = img;
 			this.limitArray = limitArray;
 			this.config = config;
+			this.waterInteraction = waterInteraction;
+			this.onImpact = onImpact;
 		}
 
 		draw(cxt: CanvasRenderingContext2D) {
@@ -126,10 +143,28 @@
 		}
 
 		update() {
+			const previousY = this.y;
 			this.x = this.fn.x(this.x, this.y);
 			this.y = this.fn.y(this.x, this.y);
 			this.r = this.fn.r(this.r);
 			this.a = this.fn.a(this.a);
+			if (this.waterInteraction.enabled) {
+				const waterline =
+					windowHeight *
+					clamp(this.waterInteraction.waterline ?? 0.78, 0.5, 0.94);
+				const impactX = this.x + 20 * this.s;
+				if (
+					previousY < waterline &&
+					this.y >= waterline &&
+					impactX >= 0 &&
+					impactX <= windowWidth &&
+					this.a > 0.05
+				) {
+					this.onImpact({ x: impactX, y: waterline, scale: this.s });
+					this.resetPosition();
+					return;
+				}
+			}
 			if (
 				this.x > windowWidth ||
 				this.x < 0 ||
@@ -199,7 +234,10 @@
 		 */
 		private initGeneration = 0;
 
-		constructor(config: SakuraConfig) {
+		constructor(
+			config: SakuraConfig,
+			private readonly waterInteraction: SakuraWaterImpactConfig,
+		) {
 			this.config = config;
 		}
 
@@ -281,6 +319,8 @@
 					this.img,
 					limitArray,
 					this.config,
+					this.waterInteraction,
+					emitWaterImpact,
 				);
 
 				sakura.draw(this.ctx);
@@ -360,7 +400,10 @@
 		/** Worker 是否已完成 init(收到 ready)。用于区分 init 阶段失败与运行期错误。 */
 		private workerReady = false;
 
-		constructor(config: SakuraConfig) {
+		constructor(
+			config: SakuraConfig,
+			private readonly waterInteraction: SakuraWaterImpactConfig,
+		) {
 			this.config = config;
 		}
 
@@ -405,6 +448,8 @@
 					const data = e.data;
 					if (data.type === "ready") {
 						this.workerReady = true;
+					} else if (data.type === "impact") {
+						emitWaterImpact(data.detail);
 					} else if (data.type === "error") {
 						console.warn("[SakuraWorker]", data.message, data.stack ?? "");
 						// init 阶段(尚未 ready)的 error 说明初始化失败:
@@ -423,6 +468,7 @@
 					{
 						type: "init",
 						config: this.config,
+						waterInteraction: this.waterInteraction,
 						canvas: offscreen,
 						width: window.innerWidth,
 						height: window.innerHeight,
@@ -508,7 +554,10 @@
 
 	let globalSakuraManager: SakuraManagerLike | null = null;
 
-	function initSakura(cfg: SakuraConfig) {
+	function initSakura(
+		cfg: SakuraConfig,
+		waterInteraction: SakuraWaterImpactConfig,
+	) {
 		if (globalSakuraManager) {
 			// 已存在管理器,更新配置(先停再启)
 			const wasRunning = globalSakuraManager.isRunning;
@@ -522,9 +571,12 @@
 		} else {
 			// 首次创建:根据特性检测选择实现
 			if (supportsWorkerSakura()) {
-				globalSakuraManager = new WorkerSakuraManager(cfg);
+				globalSakuraManager = new WorkerSakuraManager(cfg, waterInteraction);
 			} else {
-				globalSakuraManager = new MainThreadSakuraManager(cfg);
+				globalSakuraManager = new MainThreadSakuraManager(
+					cfg,
+					waterInteraction,
+				);
 			}
 			window.sakuraManager = globalSakuraManager;
 			if (cfg.enable) {
@@ -545,6 +597,9 @@
 
 		const ambient = backgroundWallpaper.ambientEffects;
 		const particles = ambient?.particles;
+		const waterInteraction = ambient?.rippleRefraction?.petalImpacts ?? {
+			enabled: false,
+		};
 		const desktopQuery = window.matchMedia("(min-width: 768px)");
 		const reducedMotionQuery = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
@@ -569,7 +624,7 @@
 			enable: false,
 			sakuraNum: Math.min(sakuraConfig.sakuraNum, particleLimit),
 		});
-		initSakura(cfg);
+		initSakura(cfg, waterInteraction);
 
 		let idleScheduled = false;
 		const applyState = () => {

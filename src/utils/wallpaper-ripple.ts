@@ -1,4 +1,5 @@
 import type { WallpaperRippleConfig } from "@/types/backgroundWallpaper";
+import type { SakuraWaterImpactDetail } from "@/types/sakura-worker";
 
 type WallpaperMode = "banner" | "fullscreen" | "overlay";
 type RendererKind = "fallback" | "webgl";
@@ -18,6 +19,13 @@ interface ResolvedRippleConfig {
 	clickStrength: number;
 	reboundDelayMs: number;
 	reboundStrength: number;
+	petalImpacts: {
+		enabled: boolean;
+		waterline: number;
+		radius: number;
+		strength: number;
+		minIntervalMs: number;
+	};
 	maxDpr: number;
 	idleAfterMs: number;
 }
@@ -58,6 +66,13 @@ export const resolveWallpaperRippleConfig = (
 	clickStrength: clamp(config.clickStrength ?? -1.1, -2.5, 2.5),
 	reboundDelayMs: clamp(config.reboundDelayMs ?? 400, 120, 900),
 	reboundStrength: clamp(config.reboundStrength ?? 0.32, -1.5, 1.5),
+	petalImpacts: {
+		enabled: config.petalImpacts?.enabled ?? false,
+		waterline: clamp(config.petalImpacts?.waterline ?? 0.78, 0.5, 0.94),
+		radius: clamp(config.petalImpacts?.radius ?? 22, 8, 48),
+		strength: clamp(config.petalImpacts?.strength ?? -0.26, -1, 1),
+		minIntervalMs: clamp(config.petalImpacts?.minIntervalMs ?? 140, 80, 2000),
+	},
 	maxDpr: clamp(config.maxDpr ?? 1.5, 1, 2),
 	idleAfterMs: clamp(config.idleAfterMs ?? 1200, 500, 5000),
 });
@@ -644,6 +659,7 @@ export class WallpaperRippleController {
 	private lastPointerX = Number.NaN;
 	private lastPointerY = Number.NaN;
 	private lastPointerTime = 0;
+	private lastPetalImpactTime = 0;
 	private gridWidth = 0;
 	private gridHeight = 0;
 	private active = false;
@@ -678,6 +694,7 @@ export class WallpaperRippleController {
 			passive: true,
 		});
 		window.addEventListener("wallpaperModeChange", this.onStateChange);
+		window.addEventListener("sakuraWaterImpact", this.onSakuraWaterImpact);
 		document.addEventListener("visibilitychange", this.onStateChange);
 		this.desktopQuery.addEventListener("change", this.onStateChange);
 		this.reducedMotionQuery.addEventListener("change", this.onStateChange);
@@ -695,6 +712,7 @@ export class WallpaperRippleController {
 		window.removeEventListener("pointermove", this.onPointerMove);
 		window.removeEventListener("pointerdown", this.onPointerDown);
 		window.removeEventListener("wallpaperModeChange", this.onStateChange);
+		window.removeEventListener("sakuraWaterImpact", this.onSakuraWaterImpact);
 		document.removeEventListener("visibilitychange", this.onStateChange);
 		this.desktopQuery.removeEventListener("change", this.onStateChange);
 		this.reducedMotionQuery.removeEventListener("change", this.onStateChange);
@@ -918,6 +936,41 @@ export class WallpaperRippleController {
 			this.wake();
 		}, this.config.reboundDelayMs);
 		this.reboundTimers.add(timer);
+	};
+
+	private readonly onSakuraWaterImpact = (event: Event) => {
+		if (!this.active || !this.renderer || !this.config.petalImpacts.enabled) {
+			return;
+		}
+		const detail = (event as CustomEvent<SakuraWaterImpactDetail>).detail;
+		if (
+			!detail ||
+			!Number.isFinite(detail.x) ||
+			!Number.isFinite(detail.y) ||
+			!Number.isFinite(detail.scale)
+		) {
+			return;
+		}
+		const now = performance.now();
+		if (
+			now - this.lastPetalImpactTime <
+			this.config.petalImpacts.minIntervalMs
+		) {
+			return;
+		}
+		const point = this.pointerToGrid(detail.x, detail.y);
+		if (!point) return;
+
+		const scale = clamp(detail.scale, 0.45, 1.35);
+		this.lastPetalImpactTime = now;
+		this.lastInputTime = now;
+		this.simulation.injectRipple(
+			point.x,
+			point.y,
+			(this.config.petalImpacts.radius * scale) / this.config.cellSize,
+			this.config.petalImpacts.strength * Math.sqrt(scale),
+		);
+		this.wake();
 	};
 
 	private wake() {

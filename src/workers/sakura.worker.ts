@@ -7,6 +7,7 @@
  *
  * 通信协议见 src/types/sakura-worker.ts
  */
+import type { SakuraWaterImpactConfig } from "@/types/backgroundWallpaper";
 import type { SakuraConfig } from "@/types/effectsConfig";
 import type { SakuraWorkerInboundMessage } from "@/types/sakura-worker";
 
@@ -19,10 +20,14 @@ let sakuraList: SakuraList | null = null;
 let animationId: number | null = null;
 let img: ImageBitmap | null = null;
 let config: SakuraConfig | null = null;
+let waterInteraction: SakuraWaterImpactConfig | null = null;
 let windowWidth = 0;
 let windowHeight = 0;
 let isRunning = false;
 let isHidden = false; // 页面可见性,隐藏时暂停动画
+
+const clamp = (value: number, min: number, max: number) =>
+	Math.min(max, Math.max(min, value));
 
 // ---------------------------------------------------------------------------
 // 工具:getRandom(逻辑与原 SakuraEffect.astro 完全一致)
@@ -128,11 +133,35 @@ class Sakura {
 	}
 
 	update() {
+		const previousY = this.y;
 		this.x = this.fn.x(this.x, this.y);
 		// 修复原实现笔误:第二参数应为 this.x(原 fuwari 写法)
 		this.y = this.fn.y(this.x, this.y);
 		this.r = this.fn.r(this.r);
 		this.a = this.fn.a(this.a);
+		if (waterInteraction?.enabled) {
+			const waterline =
+				windowHeight * clamp(waterInteraction.waterline ?? 0.78, 0.5, 0.94);
+			const impactX = this.x + 20 * this.s;
+			if (
+				previousY < waterline &&
+				this.y >= waterline &&
+				impactX >= 0 &&
+				impactX <= windowWidth &&
+				this.a > 0.05
+			) {
+				self.postMessage({
+					type: "impact",
+					detail: {
+						x: impactX,
+						y: waterline,
+						scale: this.s,
+					},
+				});
+				this.resetPosition();
+				return;
+			}
+		}
 		// 越界则重新调整位置
 		if (
 			this.x > windowWidth ||
@@ -292,6 +321,7 @@ function cleanup() {
 	ctx = null;
 	canvas = null;
 	config = null;
+	waterInteraction = null;
 	isRunning = false;
 }
 
@@ -315,6 +345,7 @@ async function handleMessage(msg: SakuraWorkerInboundMessage) {
 		case "init": {
 			try {
 				config = msg.config;
+				waterInteraction = msg.waterInteraction;
 				canvas = msg.canvas;
 				windowWidth = msg.width;
 				windowHeight = msg.height;

@@ -75,6 +75,13 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			clickStrength: -1.1,
 			reboundDelayMs: 400,
 			reboundStrength: 0.32,
+			petalImpacts: {
+				enabled: true,
+				waterline: 0.78,
+				radius: 22,
+				strength: -0.26,
+				minIntervalMs: 140,
+			},
 			maxDpr: 1.5,
 			idleAfterMs: 1200,
 		},
